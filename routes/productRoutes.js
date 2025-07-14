@@ -5,7 +5,7 @@ const productController = require("../controller/productController");
 // Create product
 router.post(
   "/",
-  productController.upload.single("img"),
+  productController.multiUpload,
   productController.validate,
   productController.create
 );
@@ -19,7 +19,7 @@ router.get("/:id", productController.viewById);
 // Update product
 router.put(
   "/:id",
-  productController.upload.single("img"),
+  productController.multiUpload,
   productController.validate,
   productController.update
 );

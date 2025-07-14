@@ -2,12 +2,13 @@ const cloudinary = require("../utils/cloudinary");
 const { Readable } = require("stream");
 const slugify = require("slugify");
 
-// Accepts imageBuffer, optional filename, and optional folder
+// Accepts imageBuffer, optional filename, optional folder, forceFolder, and resourceType
 const cloudinaryImageUpload = (
   imageBuffer,
   filename = null,
   folder = null,
-  forceFolder = false
+  forceFolder = false,
+  resourceType = "image" // 'image' or 'video'
 ) => {
   return new Promise((resolve, reject) => {
     let public_id = undefined;
@@ -22,24 +23,38 @@ const cloudinaryImageUpload = (
       })}-${uniqueSuffix}`;
       public_id = slug; // Do NOT prepend folder here
     }
-    // Always set the folder param if forceFolder is true or folder is provided
-    const uploadOptions = {
-      resource_type: "image",
+    // Set upload options
+    let uploadOptions = {
+      resource_type: resourceType,
       upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET,
-      unique_filename: false, // Do not add random characters
-      overwrite: false, // Do not overwrite if exists
+      unique_filename: false,
+      overwrite: false,
       ...(public_id ? { public_id } : {}),
       ...(uploadFolder ? { folder: uploadFolder } : {}),
-      format: "webp", // Faster format than avif
-      transformation: [
-        { width: 600, height: 600, crop: "limit" }, // Smaller size for faster upload
-        { fetch_format: "auto", quality: "auto:low" }, // Lower quality for speed
-      ],
-      // 🚀 PERFORMANCE OPTIMIZATIONS
-      eager: "f_auto,q_auto", // Auto format and quality
-      eager_async: true, // Async transformation
-      eager_notification_url: null, // Disable notifications
     };
+    if (resourceType === "image") {
+      uploadOptions = {
+        ...uploadOptions,
+        format: "webp",
+        transformation: [
+          { width: 600, height: 600, crop: "limit" },
+          { fetch_format: "auto", quality: "auto:low" },
+        ],
+        eager: "f_auto,q_auto",
+        eager_async: true,
+        eager_notification_url: null,
+      };
+    } else if (resourceType === "video") {
+      uploadOptions = {
+        ...uploadOptions,
+        resource_type: "video",
+        eager: [
+          { format: "mp4", video_codec: "av1" }, // AV1 video
+          { format: "jpg", transformation: [{ width: 400, crop: "scale" }] }, // Thumbnail
+        ],
+        eager_async: false,
+      };
+    }
     const uploadStream = cloudinary.uploader.upload_stream(
       uploadOptions,
       (error, result) => {

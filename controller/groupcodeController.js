@@ -1,5 +1,7 @@
 const { body, validationResult } = require("express-validator");
 const Groupcode = require("../model/Groupcode");
+const { cloudinaryServices } = require("../services/cloudinary.service.js");
+const slugify = require("slugify");
 
 exports.validate = [
   body("name")
@@ -17,7 +19,33 @@ exports.create = async (req, res) => {
   }
   try {
     const { name } = req.body;
-    const item = new Groupcode({ name });
+    let imgUrl = "";
+    let videoUrl = "";
+    // Upload image if present
+    if (req.files && req.files.img && req.files.img[0]) {
+      const imgResult = await cloudinaryServices.cloudinaryImageUpload(
+        req.files.img[0].buffer,
+        name + "-img",
+        "groupcode"
+      );
+      if (imgResult && imgResult.secure_url) imgUrl = imgResult.secure_url;
+    }
+    // Upload video if present
+    if (req.files && req.files.video && req.files.video[0]) {
+      const videoResult = await cloudinaryServices.cloudinaryImageUpload(
+        req.files.video[0].buffer,
+        name + "-video",
+        "groupcode",
+        false,
+        "video"
+      );
+      if (videoResult && videoResult.eager && videoResult.eager.length > 0) {
+        videoUrl = videoResult.eager[0].secure_url || videoResult.secure_url;
+      } else if (videoResult && videoResult.secure_url) {
+        videoUrl = videoResult.secure_url;
+      }
+    }
+    const item = new Groupcode({ name, img: imgUrl, video: videoUrl });
     await item.save();
     res.status(201).json({ success: true, data: item });
   } catch (error) {
@@ -64,9 +92,36 @@ exports.update = async (req, res) => {
   try {
     const { id } = req.params;
     const { name } = req.body;
+    const oldGroupcode = await Groupcode.findById(id).lean();
+    let imgUrl = oldGroupcode?.img || "";
+    let videoUrl = oldGroupcode?.video || "";
+    // Upload new image if present
+    if (req.files && req.files.img && req.files.img[0]) {
+      const imgResult = await cloudinaryServices.cloudinaryImageUpload(
+        req.files.img[0].buffer,
+        (name || oldGroupcode.name) + "-img",
+        "groupcode"
+      );
+      if (imgResult && imgResult.secure_url) imgUrl = imgResult.secure_url;
+    }
+    // Upload new video if present
+    if (req.files && req.files.video && req.files.video[0]) {
+      const videoResult = await cloudinaryServices.cloudinaryImageUpload(
+        req.files.video[0].buffer,
+        (name || oldGroupcode.name) + "-video",
+        "groupcode",
+        false,
+        "video"
+      );
+      if (videoResult && videoResult.eager && videoResult.eager.length > 0) {
+        videoUrl = videoResult.eager[0].secure_url || videoResult.secure_url;
+      } else if (videoResult && videoResult.secure_url) {
+        videoUrl = videoResult.secure_url;
+      }
+    }
     const updated = await Groupcode.findByIdAndUpdate(
       id,
-      { name },
+      { name, img: imgUrl, video: videoUrl },
       { new: true }
     );
     if (!updated) {
@@ -84,6 +139,16 @@ exports.deleteById = async (req, res) => {
     const deleted = await Groupcode.findByIdAndDelete(id);
     if (!deleted) {
       return res.status(404).json({ success: false, message: "Not found" });
+    }
+    // Delete associated files from Cloudinary
+    const { img, video } = deleted;
+    if (img) {
+      const publicId = img.split("/").pop().split(".")[0];
+      cloudinaryServices.cloudinaryImageDelete(publicId).catch(console.error);
+    }
+    if (video) {
+      const publicId = video.split("/").pop().split(".")[0];
+      cloudinaryServices.cloudinaryImageDelete(publicId).catch(console.error);
     }
     res.status(200).json({ success: true, message: "Deleted successfully" });
   } catch (error) {

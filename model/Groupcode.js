@@ -9,6 +9,14 @@ const groupcodeSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
+    img: {
+      type: String,
+      required: false,
+    },
+    video: {
+      type: String,
+      required: false,
+    },
   },
   { timestamps: true }
 );

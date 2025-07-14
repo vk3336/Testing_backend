@@ -12,6 +12,14 @@ const Category = require("../model/Category");
 const { cloudinaryServices } = require("../services/cloudinary.service.js");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
+// Update multer middleware to accept 'video' field
+const multiUpload = upload.fields([
+  { name: "file", maxCount: 1 },
+  { name: "image1", maxCount: 1 },
+  { name: "image2", maxCount: 1 },
+  { name: "video", maxCount: 1 },
+]);
+const slugify = require("slugify");
 
 // 🚀 OPTIMIZED VALIDATION - Single batch validation
 const validate = [
@@ -74,7 +82,7 @@ const create = async (req, res) => {
     return res.status(400).json({ success: false, errors: errors.array() });
   }
   try {
-    if (!req.file) {
+    if (!req.files || !req.files.file || !req.files.file[0]) {
       return res
         .status(400)
         .json({ success: false, message: "Image is required" });
@@ -115,28 +123,82 @@ const create = async (req, res) => {
       });
     }
 
-    // 🚀 PARALLEL IMAGE UPLOAD AND PRODUCT CREATION
-    const [uploadResult] = await Promise.all([
-      cloudinaryServices.cloudinaryImageUpload(
-        req.file.buffer,
-        name,
-        "products"
-      ),
-      // Pre-validate product data
-      Product.findOne({ name }).lean(),
-    ]);
+    // Fetch the category name for folder naming
+    const categoryDoc = await Category.findById(category);
+    if (!categoryDoc) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Category not found" });
+    }
+    const categoryFolder = slugify(categoryDoc.name, {
+      lower: true,
+      strict: true,
+    });
 
+    // Upload main image
+    const uploadResult = await cloudinaryServices.cloudinaryImageUpload(
+      req.files.file[0].buffer,
+      name,
+      categoryFolder
+    );
     if (uploadResult.error) {
       return res.status(500).json({
         success: false,
         message: "Image upload failed",
       });
     }
-
     const img = uploadResult.secure_url;
+
+    // Upload image1 (if present)
+    let image1Url = "";
+    if (req.files.image1 && req.files.image1[0]) {
+      const upload1 = await cloudinaryServices.cloudinaryImageUpload(
+        req.files.image1[0].buffer,
+        name + "-image1",
+        categoryFolder
+      );
+      if (upload1 && upload1.secure_url) image1Url = upload1.secure_url;
+    }
+    // Upload image2 (if present)
+    let image2Url = "";
+    if (req.files.image2 && req.files.image2[0]) {
+      const upload2 = await cloudinaryServices.cloudinaryImageUpload(
+        req.files.image2[0].buffer,
+        name + "-image2",
+        categoryFolder
+      );
+      if (upload2 && upload2.secure_url) image2Url = upload2.secure_url;
+    }
+
+    // Upload video (if present)
+    let videoUrl = "";
+    let videoThumbnailUrl = "";
+    if (req.files.video && req.files.video[0]) {
+      const videoResult = await cloudinaryServices.cloudinaryImageUpload(
+        req.files.video[0].buffer,
+        name + "-video",
+        categoryFolder,
+        false,
+        "video"
+      );
+      // Extract AV1 video and thumbnail URLs
+      if (videoResult && videoResult.eager && videoResult.eager.length > 0) {
+        videoUrl = videoResult.eager[0].secure_url || videoResult.secure_url;
+        videoThumbnailUrl =
+          videoResult.eager[1] && videoResult.eager[1].secure_url
+            ? videoResult.eager[1].secure_url
+            : "";
+      } else if (videoResult && videoResult.secure_url) {
+        videoUrl = videoResult.secure_url;
+      }
+    }
     const product = new Product({
       name,
       img,
+      image1: image1Url,
+      image2: image2Url,
+      video: videoUrl,
+      videoThumbnail: videoThumbnailUrl,
       category,
       substructure,
       content,
@@ -249,19 +311,104 @@ const update = async (req, res) => {
     const { id } = req.params;
     const updateData = { ...req.body };
 
-    // 🚀 PARALLEL OPERATIONS for faster updates
-    const operations = [];
+    // Fetch the product to get old image URLs and category for folder
+    const oldProduct = await Product.findById(id).lean();
+    if (!oldProduct) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    }
+    // Get category name for folder
+    let categoryFolder = "products";
+    if (updateData.category || oldProduct.category) {
+      const categoryId = updateData.category || oldProduct.category;
+      const categoryDoc = await Category.findById(categoryId);
+      if (categoryDoc) {
+        categoryFolder = slugify(categoryDoc.name, {
+          lower: true,
+          strict: true,
+        });
+      }
+    }
 
-    if (req.file) {
-      // Get old product and upload new image in parallel
-      operations.push(
-        Product.findById(id).lean(),
-        cloudinaryServices.cloudinaryImageUpload(
-          req.file.buffer,
-          req.body.name || "product",
-          "products"
-        )
+    // Handle main image (img)
+    if (req.files && req.files.file && req.files.file[0]) {
+      const uploadResult = await cloudinaryServices.cloudinaryImageUpload(
+        req.files.file[0].buffer,
+        req.body.name || oldProduct.name || "product",
+        categoryFolder
       );
+      if (uploadResult && uploadResult.secure_url) {
+        // Delete old image from Cloudinary
+        if (oldProduct.img) {
+          const publicId = oldProduct.img.split("/").pop().split(".")[0];
+          cloudinaryServices
+            .cloudinaryImageDelete(publicId)
+            .catch(console.error);
+        }
+        updateData.img = uploadResult.secure_url;
+      }
+    }
+    // Handle image1
+    if (req.files && req.files.image1 && req.files.image1[0]) {
+      const upload1 = await cloudinaryServices.cloudinaryImageUpload(
+        req.files.image1[0].buffer,
+        (req.body.name || oldProduct.name || "product") + "-image1",
+        categoryFolder
+      );
+      if (upload1 && upload1.secure_url) {
+        if (oldProduct.image1) {
+          const publicId = oldProduct.image1.split("/").pop().split(".")[0];
+          cloudinaryServices
+            .cloudinaryImageDelete(publicId)
+            .catch(console.error);
+        }
+        updateData.image1 = upload1.secure_url;
+      }
+    }
+    // Handle image2
+    if (req.files && req.files.image2 && req.files.image2[0]) {
+      const upload2 = await cloudinaryServices.cloudinaryImageUpload(
+        req.files.image2[0].buffer,
+        (req.body.name || oldProduct.name || "product") + "-image2",
+        categoryFolder
+      );
+      if (upload2 && upload2.secure_url) {
+        if (oldProduct.image2) {
+          const publicId = oldProduct.image2.split("/").pop().split(".")[0];
+          cloudinaryServices
+            .cloudinaryImageDelete(publicId)
+            .catch(console.error);
+        }
+        updateData.image2 = upload2.secure_url;
+      }
+    }
+
+    // Handle video
+    if (req.files && req.files.video && req.files.video[0]) {
+      const videoResult = await cloudinaryServices.cloudinaryImageUpload(
+        req.files.video[0].buffer,
+        (req.body.name || oldProduct.name || "product") + "-video",
+        categoryFolder,
+        false,
+        "video"
+      );
+      if (videoResult && videoResult.eager && videoResult.eager.length > 0) {
+        if (oldProduct.video) {
+          const publicId = oldProduct.video.split("/").pop().split(".")[0];
+          cloudinaryServices
+            .cloudinaryImageDelete(publicId)
+            .catch(console.error);
+        }
+        updateData.video =
+          videoResult.eager[0].secure_url || videoResult.secure_url;
+        updateData.videoThumbnail =
+          videoResult.eager[1] && videoResult.eager[1].secure_url
+            ? videoResult.eager[1].secure_url
+            : "";
+      } else if (videoResult && videoResult.secure_url) {
+        updateData.video = videoResult.secure_url;
+      }
     }
 
     // 🚀 BATCH VALIDATION if references are being updated
@@ -314,23 +461,6 @@ const update = async (req, res) => {
           });
         }
       }
-    }
-
-    let results = [];
-    if (operations.length > 0) {
-      results = await Promise.all(operations);
-    }
-
-    if (req.file) {
-      const [oldProduct, uploadResult] = results;
-
-      // Delete old image if exists
-      if (oldProduct && oldProduct.img) {
-        const publicId = oldProduct.img.split("/").pop().split(".")[0];
-        cloudinaryServices.cloudinaryImageDelete(publicId).catch(console.error); // Fire and forget
-      }
-
-      updateData.img = uploadResult.secure_url;
     }
 
     // Sanitize updateData
@@ -387,6 +517,7 @@ const deleteById = async (req, res) => {
 
 module.exports = {
   upload,
+  multiUpload,
   create,
   viewAll,
   viewById,
