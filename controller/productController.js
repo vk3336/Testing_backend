@@ -21,6 +21,24 @@ const multiUpload = upload.fields([
   { name: "video", maxCount: 1 },
 ]);
 const slugify = require("slugify");
+const path = require("path");
+const ALLOWED_IMAGE_EXTENSIONS = (
+  process.env.ALLOWED_IMAGE_EXTENSIONS || "jpg,jpeg,png,webp"
+).split(",");
+const ALLOWED_VIDEO_EXTENSIONS = (
+  process.env.ALLOWED_VIDEO_EXTENSIONS || "mp4,webm"
+).split(",");
+const MAX_IMAGE_SIZE = process.env.MAX_IMAGE_SIZE
+  ? parseInt(process.env.MAX_IMAGE_SIZE)
+  : 5 * 1024 * 1024; // 5MB default
+const MAX_VIDEO_SIZE = process.env.MAX_VIDEO_SIZE
+  ? parseInt(process.env.MAX_VIDEO_SIZE)
+  : 10 * 1024 * 1024; // 10MB default
+
+function isValidExtension(filename, allowedExts) {
+  const ext = path.extname(filename).replace(".", "").toLowerCase();
+  return allowedExts.includes(ext);
+}
 
 // 🚀 OPTIMIZED VALIDATION - Single batch validation
 const validate = [
@@ -93,10 +111,56 @@ const create = async (req, res) => {
     return res.status(400).json({ success: false, errors: errors.array() });
   }
   try {
-    if (!req.files || !req.files.file || !req.files.file[0]) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Image is required" });
+    // Validate image files
+    const imageFields = ["file", "image1", "image2"];
+    for (const field of imageFields) {
+      if (req.files && req.files[field] && req.files[field][0]) {
+        const fileObj = req.files[field][0];
+        if (fileObj.size > MAX_IMAGE_SIZE) {
+          return res
+            .status(400)
+            .json({
+              success: false,
+              message: `Image file size for ${field} exceeds limit (${
+                MAX_IMAGE_SIZE / (1024 * 1024)
+              }MB)`,
+            });
+        }
+        if (!isValidExtension(fileObj.originalname, ALLOWED_IMAGE_EXTENSIONS)) {
+          return res
+            .status(400)
+            .json({
+              success: false,
+              message: `Invalid image extension for ${field}. Allowed: ${ALLOWED_IMAGE_EXTENSIONS.join(
+                ", "
+              )}`,
+            });
+        }
+      }
+    }
+    // Validate video file
+    if (req.files && req.files.video && req.files.video[0]) {
+      const videoObj = req.files.video[0];
+      if (videoObj.size > MAX_VIDEO_SIZE) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: `Video file size exceeds limit (${
+              MAX_VIDEO_SIZE / (1024 * 1024)
+            }MB)`,
+          });
+      }
+      if (!isValidExtension(videoObj.originalname, ALLOWED_VIDEO_EXTENSIONS)) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: `Invalid video extension. Allowed: ${ALLOWED_VIDEO_EXTENSIONS.join(
+              ", "
+            )}`,
+          });
+      }
     }
     const {
       name,
