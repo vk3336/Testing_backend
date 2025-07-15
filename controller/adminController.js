@@ -82,7 +82,6 @@ const sendOTP = async (req, res) => {
       message: "OTP sent successfully to admin email",
     });
   } catch (error) {
-    console.error("Error sending OTP:", error);
     res.status(500).json({
       success: false,
       message: "Failed to send OTP",
@@ -148,7 +147,6 @@ const verifyOTP = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error verifying OTP:", error);
     res.status(500).json({
       success: false,
       message: "Failed to verify OTP",
@@ -191,7 +189,6 @@ const logoutAdmin = async (req, res) => {
       message: "Admin logged out successfully",
     });
   } catch (error) {
-    console.error("Error logging out admin:", error);
     res.status(500).json({
       success: false,
       message: "Failed to logout admin",
@@ -251,7 +248,6 @@ const getAdminStatus = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error getting admin status:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get admin status",

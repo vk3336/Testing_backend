@@ -73,6 +73,35 @@ const productSchema = new mongoose.Schema(
       ref: "Color",
       required: true,
     },
+    motif: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Motif",
+      required: false,
+    },
+    um: {
+      type: String,
+      required: false,
+    },
+    currency: {
+      type: String,
+      required: false,
+    },
+    gsm: {
+      type: Number,
+      required: false,
+    },
+    oz: {
+      type: Number,
+      required: false,
+    },
+    cm: {
+      type: Number,
+      required: false,
+    },
+    inch: {
+      type: Number,
+      required: false,
+    },
   },
   { timestamps: true }
 );

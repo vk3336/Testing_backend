@@ -59,7 +59,6 @@ const cloudinaryImageUpload = (
       uploadOptions,
       (error, result) => {
         if (error) {
-          console.error("Error uploading to Cloudinary:", error);
           reject(error);
         } else {
           resolve(result);

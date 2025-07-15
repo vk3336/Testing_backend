@@ -23,6 +23,7 @@ const subfinishRoutes = require("./routes/subfinishRoutes");
 const subsuitableRoutes = require("./routes/subsuitableRoutes");
 const productRoutes = require("./routes/productRoutes");
 const seoRoutes = require("./routes/seoRoutes");
+const motifRoutes = require("./routes/motifRoutes");
 
 const port = process.env.PORT || 7000;
 connectDB();
@@ -45,7 +46,7 @@ app.use(limiter);
 // 🚀 ULTRA-FAST MIDDLEWARE OPTIMIZATIONS
 app.use(
   cors({
-    origin: [process.env.BASE_URL1, "http://localhost:3001"],
+    origin: [process.env.FRONTEND_URL || "http://localhost:3000"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-admin-email"], // <-- added x-admin-email
@@ -133,6 +134,7 @@ app.use("/api/subfinish", subfinishRoutes);
 app.use("/api/subsuitable", subsuitableRoutes);
 app.use("/api/product", productRoutes);
 app.use("/api/seo", seoRoutes);
+app.use("/api/motif", motifRoutes);
 
 app.get("/", (req, res) => {
   res.send("Welcome to the vivek API world");

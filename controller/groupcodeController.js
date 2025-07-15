@@ -144,11 +144,11 @@ exports.deleteById = async (req, res) => {
     const { img, video } = deleted;
     if (img) {
       const publicId = img.split("/").pop().split(".")[0];
-      cloudinaryServices.cloudinaryImageDelete(publicId).catch(console.error);
+      cloudinaryServices.cloudinaryImageDelete(publicId);
     }
     if (video) {
       const publicId = video.split("/").pop().split(".")[0];
-      cloudinaryServices.cloudinaryImageDelete(publicId).catch(console.error);
+      cloudinaryServices.cloudinaryImageDelete(publicId);
     }
     res.status(200).json({ success: true, message: "Deleted successfully" });
   } catch (error) {

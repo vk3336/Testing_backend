@@ -1,7 +1,7 @@
 require("dotenv").config();
 const mongoose = require("mongoose");
 
-const MONGODB_URI = process.env.MONGODB_URI_TEST;
+const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGODB_URI_TEST;
 
 const connectDB = async () => {
   try {
@@ -27,25 +27,25 @@ const connectDB = async () => {
 
     // 🚀 CONNECTION POOL MONITORING
     mongoose.connection.on("connected", () => {
-      console.log("🚀 MongoDB connected successfully");
+      // MongoDB connected
     });
 
     mongoose.connection.on("error", (err) => {
-      console.error("❌ MongoDB connection error:", err);
+      // Optionally log to a file or monitoring service
     });
 
     mongoose.connection.on("disconnected", () => {
-      console.log("⚠️ MongoDB disconnected");
+      // MongoDB disconnected
     });
 
     // 🚀 GRACEFUL SHUTDOWN
     process.on("SIGINT", async () => {
       await mongoose.connection.close();
-      console.log("🔄 MongoDB connection closed through app termination");
+      // MongoDB connection closed through app termination
       process.exit(0);
     });
   } catch (error) {
-    console.error("❌ MongoDB connection failed:", error.message);
+    // Optionally log to a file or monitoring service
     process.exit(1);
   }
 };

@@ -9,6 +9,7 @@ const Vendor = require("../model/Vendor");
 const Groupcode = require("../model/Groupcode");
 const Color = require("../model/Color");
 const Category = require("../model/Category");
+const Motif = require("../model/Motif");
 const { cloudinaryServices } = require("../services/cloudinary.service.js");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
@@ -74,6 +75,16 @@ const validate = [
     .withMessage("Color is required")
     .isMongoId()
     .withMessage("Color must be a valid Mongo ID"),
+  body("motif")
+    .optional()
+    .isMongoId()
+    .withMessage("Motif must be a valid Mongo ID"),
+  body("um").optional().isString(),
+  body("currency").optional().isString(),
+  body("gsm").optional().isNumeric(),
+  body("oz").optional().isNumeric(),
+  body("cm").optional().isNumeric(),
+  body("inch").optional().isNumeric(),
 ];
 
 const create = async (req, res) => {
@@ -98,6 +109,13 @@ const create = async (req, res) => {
       vendor,
       groupcode,
       color,
+      motif,
+      um,
+      currency,
+      gsm,
+      oz,
+      cm,
+      inch,
     } = req.body;
 
     // 🚀 BATCH VALIDATION - Check all references in parallel
@@ -121,6 +139,16 @@ const create = async (req, res) => {
         success: false,
         message: "One or more referenced entities do not exist",
       });
+    }
+
+    // Validate motif if provided
+    if (motif) {
+      const motifExists = await Motif.exists({ _id: motif });
+      if (!motifExists) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Motif not found" });
+      }
     }
 
     // Fetch the category name for folder naming
@@ -208,6 +236,13 @@ const create = async (req, res) => {
       vendor,
       groupcode,
       color,
+      motif,
+      um,
+      currency,
+      gsm,
+      oz,
+      cm,
+      inch,
     });
 
     await product.save();
@@ -223,11 +258,11 @@ const create = async (req, res) => {
       .populate("vendor", "name")
       .populate("groupcode", "name")
       .populate("color", "name")
+      .populate("motif", "name")
       .lean();
 
     res.status(201).json({ success: true, data: populated });
   } catch (error) {
-    console.error("Product creation error:", error.stack);
     res.status(500).json({ success: false, message: error.message, error });
   }
 };
@@ -257,6 +292,7 @@ const viewAll = async (req, res) => {
         .populate("vendor", "name")
         .populate("groupcode", "name")
         .populate("color", "name")
+        .populate("motif", "name")
         .exec(),
       Product.countDocuments(),
     ]);
@@ -272,7 +308,6 @@ const viewAll = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Product viewAll error:", error);
     res.status(500).json({ success: false, message: error.message, error });
   }
 };
@@ -289,7 +324,8 @@ const viewById = async (req, res) => {
       .populate("subsuitable", "name")
       .populate("vendor", "name")
       .populate("groupcode", "name")
-      .populate("color", "name");
+      .populate("color", "name")
+      .populate("motif", "name");
     if (!product) {
       return res
         .status(404)
@@ -297,7 +333,6 @@ const viewById = async (req, res) => {
     }
     res.status(200).json({ success: true, data: product });
   } catch (error) {
-    console.error("Product viewById error:", error);
     res.status(500).json({ success: false, message: error.message, error });
   }
 };
@@ -421,7 +456,8 @@ const update = async (req, res) => {
       updateData.subsuitable ||
       updateData.vendor ||
       updateData.groupcode ||
-      updateData.color
+      updateData.color ||
+      updateData.motif
     ) {
       const validationPromises = [];
       if (updateData.category)
@@ -450,6 +486,8 @@ const update = async (req, res) => {
         );
       if (updateData.color)
         validationPromises.push(Color.exists({ _id: updateData.color }));
+      if (updateData.motif)
+        validationPromises.push(Motif.exists({ _id: updateData.motif }));
 
       if (validationPromises.length > 0) {
         const validationResults = await Promise.all(validationPromises);
@@ -485,6 +523,7 @@ const update = async (req, res) => {
         { path: "vendor", select: "name" },
         { path: "groupcode", select: "name" },
         { path: "color", select: "name" },
+        { path: "motif", select: "name" },
       ])
       .lean();
 

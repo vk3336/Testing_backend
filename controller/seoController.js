@@ -59,7 +59,6 @@ const createSeo = async (req, res) => {
       data: populatedSeo,
     });
   } catch (error) {
-    console.error("Error creating SEO:", error.stack);
     res.status(500).json({
       success: false,
       message: "Error creating SEO",
@@ -99,7 +98,6 @@ const getAllSeo = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error getting SEO:", error);
     res.status(500).json({
       success: false,
       message: "Error getting SEO data",
@@ -135,7 +133,6 @@ const getSeoById = async (req, res) => {
       data: seo,
     });
   } catch (error) {
-    console.error("Error getting SEO by ID:", error.stack);
     res.status(500).json({
       success: false,
       message: "Error getting SEO data",
@@ -163,7 +160,6 @@ const getSeoByProduct = async (req, res) => {
       data: seo,
     });
   } catch (error) {
-    console.error("Error getting SEO by product:", error);
     res.status(500).json({
       success: false,
       message: "Error getting SEO data",
@@ -248,7 +244,6 @@ const updateSeo = async (req, res) => {
       data: updatedSeo,
     });
   } catch (error) {
-    console.error("Error updating SEO:", error);
     res.status(500).json({
       success: false,
       message: "Error updating SEO",
@@ -284,7 +279,6 @@ const deleteSeo = async (req, res) => {
       data: deletedSeo,
     });
   } catch (error) {
-    console.error("Error deleting SEO:", error);
     res.status(500).json({
       success: false,
       message: "Error deleting SEO",
@@ -305,7 +299,6 @@ const getPopularProducts = async (req, res) => {
       data: popularProducts,
     });
   } catch (error) {
-    console.error("Error getting popular products:", error);
     res.status(500).json({
       success: false,
       message: "Error getting popular products",
@@ -326,7 +319,6 @@ const getTopRatedProducts = async (req, res) => {
       data: topRatedProducts,
     });
   } catch (error) {
-    console.error("Error getting top rated products:", error);
     res.status(500).json({
       success: false,
       message: "Error getting top rated products",
@@ -354,7 +346,6 @@ const getSeoBySlug = async (req, res) => {
       data: seo,
     });
   } catch (error) {
-    console.error("Error getting SEO by slug:", error);
     res.status(500).json({
       success: false,
       message: "Error getting SEO data",
