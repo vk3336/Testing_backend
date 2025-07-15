@@ -263,7 +263,13 @@ const create = async (req, res) => {
 
     res.status(201).json({ success: true, data: populated });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message, error });
+    console.error("🔥 Product creation error:", error.message);
+    console.error("🔍 Stack:", error.stack);
+    console.error("📦 Full error object:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error.message || "Unknown error",
+    });
   }
 };
 
