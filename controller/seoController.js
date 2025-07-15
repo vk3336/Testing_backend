@@ -354,6 +354,76 @@ const getSeoBySlug = async (req, res) => {
   }
 };
 
+// Get SEO by productIdentifier
+const getSeoByProductIdentifier = async (req, res, next) => {
+  try {
+    const seo = await Seo.findOne({
+      productIdentifier: req.params.identifier,
+    }).populate("product");
+    if (!seo)
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: "No SEO found with this product identifier",
+        });
+    res.status(200).json({ success: true, data: seo });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get SEO by salesPrice range (±15%)
+const getSeoBySalesPriceValue = async (req, res, next) => {
+  const value = Number(req.params.value);
+  try {
+    if (isNaN(value))
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid sales price value" });
+    const range = value * 0.15;
+    const min = value - range;
+    const max = value + range;
+    const matched = await Seo.find({
+      salesPrice: { $gte: min, $lte: max },
+    }).populate("product");
+    if (!matched.length)
+      return res
+        .status(404)
+        .json({ success: false, message: "No SEO found in sales price range" });
+    res.status(200).json({ success: true, data: matched });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get SEO by purchasePrice range (±15%)
+const getSeoByPurchasePriceValue = async (req, res, next) => {
+  const value = Number(req.params.value);
+  try {
+    if (isNaN(value))
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid purchase price value" });
+    const range = value * 0.15;
+    const min = value - range;
+    const max = value + range;
+    const matched = await Seo.find({
+      purchasePrice: { $gte: min, $lte: max },
+    }).populate("product");
+    if (!matched.length)
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: "No SEO found in purchase price range",
+        });
+    res.status(200).json({ success: true, data: matched });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createSeo,
   getAllSeo,
@@ -364,4 +434,7 @@ module.exports = {
   getPopularProducts,
   getTopRatedProducts,
   getSeoBySlug,
+  getSeoByProductIdentifier,
+  getSeoBySalesPriceValue,
+  getSeoByPurchasePriceValue,
 };

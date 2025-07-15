@@ -10,6 +10,9 @@ const {
   getPopularProducts,
   getTopRatedProducts,
   getSeoBySlug,
+  getSeoByProductIdentifier,
+  getSeoBySalesPriceValue,
+  getSeoByPurchasePriceValue,
 } = require("../controller/seoController");
 
 // Create SEO
@@ -29,6 +32,15 @@ router.get("/slug/:slug", getSeoBySlug);
 
 // Get SEO by product ID
 router.get("/product/:productId", getSeoByProduct);
+
+// Get SEO by productIdentifier
+router.get("/identifier/:identifier", getSeoByProductIdentifier);
+
+// Get SEO by salesPrice range
+router.get("/sales-price/:value", getSeoBySalesPriceValue);
+
+// Get SEO by purchasePrice range
+router.get("/purchase-price/:value", getSeoByPurchasePriceValue);
 
 // Get SEO by ID
 router.get("/:id", getSeoById);

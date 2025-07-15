@@ -116,7 +116,15 @@ const create = async (req, res) => {
       oz,
       cm,
       inch,
+      quantity: rawQuantity,
     } = req.body;
+    let quantity = undefined;
+    if (rawQuantity !== undefined && rawQuantity !== "") {
+      const parsed = Number(rawQuantity);
+      if (!isNaN(parsed)) {
+        quantity = parsed;
+      }
+    }
 
     // 🚀 BATCH VALIDATION - Check all references in parallel
     const validationPromises = [
@@ -243,6 +251,7 @@ const create = async (req, res) => {
       oz,
       cm,
       inch,
+      quantity,
     });
 
     await product.save();
@@ -351,6 +360,16 @@ const update = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = { ...req.body };
+    if (req.body.quantity !== undefined && req.body.quantity !== "") {
+      const parsed = Number(req.body.quantity);
+      if (!isNaN(parsed)) {
+        updateData.quantity = parsed;
+      } else {
+        delete updateData.quantity;
+      }
+    } else {
+      delete updateData.quantity;
+    }
 
     // Fetch the product to get old image URLs and category for folder
     const oldProduct = await Product.findById(id).lean();
@@ -560,6 +579,224 @@ const deleteById = async (req, res) => {
   }
 };
 
+// SEARCH PRODUCTS BY NAME
+const searchProducts = async (req, res, next) => {
+  const q = req.params.q || "";
+  // Escape regex special characters
+  const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const safeQ = escapeRegex(q);
+  try {
+    const results = await Product.find({
+      name: { $regex: safeQ, $options: "i" },
+    });
+    res.status(200).json({ status: 1, data: results });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET ALL PRODUCTS BY GROUPCODE ID
+const getProductsByGroupcode = async (req, res, next) => {
+  const { groupcodeId } = req.params;
+  try {
+    const products = await Product.find({ groupcode: groupcodeId });
+    if (products.length === 0) {
+      return res
+        .status(404)
+        .json({ status: 0, message: "No products found for this group code" });
+    }
+    res.status(200).json({ status: 1, data: products });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET PRODUCTS BY CATEGORY ID
+const getProductsByCategory = async (req, res, next) => {
+  try {
+    const products = await Product.find({ category: req.params.categoryId });
+    if (!products.length)
+      return res
+        .status(404)
+        .json({ status: 0, message: "No products found for this category" });
+    res.status(200).json({ status: 1, data: products });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET PRODUCTS BY CONTENT ID
+const getProductsByContent = async (req, res, next) => {
+  try {
+    const products = await Product.find({ content: req.params.contentId });
+    if (!products.length)
+      return res
+        .status(404)
+        .json({ status: 0, message: "No products found for this content" });
+    res.status(200).json({ status: 1, data: products });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET PRODUCTS BY DESIGN ID
+const getProductsByDesign = async (req, res, next) => {
+  try {
+    const products = await Product.find({ design: req.params.designId });
+    if (!products.length)
+      return res
+        .status(404)
+        .json({ status: 0, message: "No products found for this design" });
+    res.status(200).json({ status: 1, data: products });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET PRODUCTS BY COLOR ID
+const getProductsByColor = async (req, res, next) => {
+  try {
+    const products = await Product.find({ color: req.params.colorId });
+    if (!products.length)
+      return res
+        .status(404)
+        .json({ status: 0, message: "No products found for this color" });
+    res.status(200).json({ status: 1, data: products });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET PRODUCTS BY MOTIF ID
+const getProductsByMotif = async (req, res, next) => {
+  try {
+    const products = await Product.find({ motif: req.params.motifId });
+    if (!products.length)
+      return res
+        .status(404)
+        .json({ status: 0, message: "No products found for this motif" });
+    res.status(200).json({ status: 1, data: products });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET PRODUCTS BY VENDOR ID
+const getProductsByVendor = async (req, res, next) => {
+  try {
+    const products = await Product.find({ vendor: req.params.vendorId });
+    if (!products.length)
+      return res
+        .status(404)
+        .json({ status: 0, message: "No products found for this vendor" });
+    res.status(200).json({ status: 1, data: products });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET PRODUCTS BY GSM RANGE
+const getProductsByGsmValue = async (req, res, next) => {
+  const value = Number(req.params.value);
+  try {
+    if (isNaN(value))
+      return res.status(400).json({ status: 0, message: "Invalid GSM value" });
+    const range = value * 0.15;
+    const min = value - range;
+    const max = value + range;
+    const matched = await Product.find({ gsm: { $gte: min, $lte: max } });
+    if (!matched.length)
+      return res
+        .status(404)
+        .json({ status: 0, message: "No GSM products found in range" });
+    res.status(200).json({ status: 1, data: matched });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET PRODUCTS BY OZ RANGE
+const getProductsByOzValue = async (req, res, next) => {
+  const value = Number(req.params.value);
+  try {
+    if (isNaN(value))
+      return res.status(400).json({ status: 0, message: "Invalid OZ value" });
+    const range = value * 0.15;
+    const min = value - range;
+    const max = value + range;
+    const matched = await Product.find({ oz: { $gte: min, $lte: max } });
+    if (!matched.length)
+      return res
+        .status(404)
+        .json({ status: 0, message: "No OZ products found in range" });
+    res.status(200).json({ status: 1, data: matched });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET PRODUCTS BY INCH RANGE
+const getProductsByInchValue = async (req, res, next) => {
+  const value = Number(req.params.value);
+  try {
+    if (isNaN(value))
+      return res.status(400).json({ status: 0, message: "Invalid Inch value" });
+    const range = value * 0.15;
+    const min = value - range;
+    const max = value + range;
+    const matched = await Product.find({ inch: { $gte: min, $lte: max } });
+    if (!matched.length)
+      return res
+        .status(404)
+        .json({ status: 0, message: "No Inch products found in range" });
+    res.status(200).json({ status: 1, data: matched });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET PRODUCTS BY CM RANGE
+const getProductsByCmValue = async (req, res, next) => {
+  const value = Number(req.params.value);
+  try {
+    if (isNaN(value))
+      return res.status(400).json({ status: 0, message: "Invalid CM value" });
+    const range = value * 0.15;
+    const min = value - range;
+    const max = value + range;
+    const matched = await Product.find({ cm: { $gte: min, $lte: max } });
+    if (!matched.length)
+      return res
+        .status(404)
+        .json({ status: 0, message: "No CM products found in range" });
+    res.status(200).json({ status: 1, data: matched });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET PRODUCTS BY QUANTITY RANGE
+const getProductsByQuantityValue = async (req, res, next) => {
+  const value = Number(req.params.value);
+  try {
+    if (isNaN(value))
+      return res
+        .status(400)
+        .json({ status: 0, message: "Invalid Quantity value" });
+    const range = value * 0.15;
+    const min = value - range;
+    const max = value + range;
+    const matched = await Product.find({ quantity: { $gte: min, $lte: max } });
+    if (!matched.length)
+      return res
+        .status(404)
+        .json({ status: 0, message: "No Quantity products found in range" });
+    res.status(200).json({ status: 1, data: matched });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   upload,
   multiUpload,
@@ -569,4 +806,17 @@ module.exports = {
   update,
   deleteById,
   validate,
+  searchProducts,
+  getProductsByGroupcode,
+  getProductsByCategory,
+  getProductsByContent,
+  getProductsByDesign,
+  getProductsByColor,
+  getProductsByMotif,
+  getProductsByVendor,
+  getProductsByGsmValue,
+  getProductsByOzValue,
+  getProductsByInchValue,
+  getProductsByCmValue,
+  getProductsByQuantityValue,
 };

@@ -102,6 +102,10 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: false,
     },
+    quantity: {
+      type: Number,
+      required: false,
+    },
   },
   { timestamps: true }
 );
@@ -119,5 +123,6 @@ productSchema.index({ groupcode: 1 });
 productSchema.index({ color: 1 });
 productSchema.index({ createdAt: -1 });
 productSchema.index({ updatedAt: -1 });
+productSchema.index({ quantity: 1 });
 
 module.exports = mongoose.model("Product", productSchema);

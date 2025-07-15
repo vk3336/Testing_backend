@@ -732,6 +732,47 @@ if (!process.env.MONGODB_URI_TEST) {
         const getRes = await request(server).get(`/api/product/${productId}`);
         expect(getRes.statusCode).toBe(404);
       });
+
+      test("should get products by quantity range", async () => {
+        // Create a product with a known quantity
+        const unique = uniqueName("Quantity Product");
+        const quantity = 200;
+        const res = await request(server)
+          .post("/api/product")
+          .field("name", unique)
+          .field("category", categoryId)
+          .field("structure", ids.structure._id)
+          .field("substructure", ids.substructure._id)
+          .field("content", ids.content._id)
+          .field("design", ids.design._id)
+          .field("finish", ids.finish._id)
+          .field("subfinish", ids.subfinish._id)
+          .field("suitablefor", ids.suitablefor._id)
+          .field("subsuitable", ids.subsuitable._id)
+          .field("vendor", ids.vendor._id)
+          .field("groupcode", ids.groupcode._id)
+          .field("color", ids.color._id)
+          .field("motif", ids.motif._id)
+          .field("um", "KG")
+          .field("currency", "USD")
+          .field("gsm", "120")
+          .field("cm", "30")
+          .field("oz", "10")
+          .field("inch", "10")
+          .field("quantity", quantity)
+          .attach("file", path.join(__dirname, "test-image.png"));
+        expect(res.statusCode).toBe(201);
+        // Should find product in range
+        const inRange = await request(server).get(`/api/product/quantity/210`);
+        expect(inRange.statusCode).toBe(200);
+        expect(Array.isArray(inRange.body.data)).toBe(true);
+        expect(inRange.body.data.some((p) => p.name === unique)).toBe(true);
+        // Should not find product out of range
+        const outRange = await request(server).get(
+          `/api/product/quantity/5000`
+        );
+        expect(outRange.statusCode).toBe(404);
+      });
     });
 
     // Substructure, Subfinish, Subsuitable tests
