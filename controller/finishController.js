@@ -1,5 +1,6 @@
 const { body, validationResult } = require("express-validator");
 const Finish = require("../model/Finish");
+const Subfinish = require("../model/Subfinish");
 
 exports.validate = [
   body("name")
@@ -74,6 +75,14 @@ exports.update = async (req, res) => {
 exports.deleteById = async (req, res) => {
   try {
     const { id } = req.params;
+    // Prevent deletion if referenced by any Subfinish
+    const subfinishUsing = await Subfinish.findOne({ finish: id });
+    if (subfinishUsing) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot delete: Finish is in use by one or more subfinishes.",
+      });
+    }
     const deleted = await Finish.findByIdAndDelete(id);
     if (!deleted) {
       return res.status(404).json({ success: false, message: "Not found" });

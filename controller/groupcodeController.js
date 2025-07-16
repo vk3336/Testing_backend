@@ -2,6 +2,7 @@ const { body, validationResult } = require("express-validator");
 const Groupcode = require("../model/Groupcode");
 const { cloudinaryServices } = require("../services/cloudinary.service.js");
 const slugify = require("slugify");
+const Product = require("../model/Product");
 
 exports.validate = [
   body("name")
@@ -136,6 +137,14 @@ exports.update = async (req, res) => {
 exports.deleteById = async (req, res) => {
   try {
     const { id } = req.params;
+    // Prevent deletion if referenced by any product
+    const productUsing = await Product.findOne({ groupcode: id });
+    if (productUsing) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot delete: Groupcode is in use by one or more products.",
+      });
+    }
     const deleted = await Groupcode.findByIdAndDelete(id);
     if (!deleted) {
       return res.status(404).json({ success: false, message: "Not found" });

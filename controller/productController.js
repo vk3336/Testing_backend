@@ -10,6 +10,7 @@ const Groupcode = require("../model/Groupcode");
 const Color = require("../model/Color");
 const Category = require("../model/Category");
 const Motif = require("../model/Motif");
+const Seo = require("../model/Seo");
 const { cloudinaryServices } = require("../services/cloudinary.service.js");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
@@ -624,6 +625,14 @@ const update = async (req, res) => {
 const deleteById = async (req, res) => {
   try {
     const { id } = req.params;
+    // Prevent deletion if referenced by any SEO
+    const seoUsing = await Seo.findOne({ product: id });
+    if (seoUsing) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot delete: Product is in use by one or more SEO records.",
+      });
+    }
     const deleted = await Product.findByIdAndDelete(id);
     if (!deleted) {
       return res.status(404).json({ success: false, message: "Not found" });

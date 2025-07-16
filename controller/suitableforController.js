@@ -1,5 +1,6 @@
 const { body, validationResult } = require("express-validator");
 const Suitablefor = require("../model/Suitablefor");
+const Subsuitable = require("../model/Subsuitable");
 
 exports.validate = [
   body("name")
@@ -81,6 +82,15 @@ exports.update = async (req, res) => {
 exports.deleteById = async (req, res) => {
   try {
     const { id } = req.params;
+    // Prevent deletion if referenced by any Subsuitable
+    const subsuitableUsing = await Subsuitable.findOne({ suitablefor: id });
+    if (subsuitableUsing) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Cannot delete: Suitablefor is in use by one or more subsuitables.",
+      });
+    }
     const deleted = await Suitablefor.findByIdAndDelete(id);
     if (!deleted) {
       return res.status(404).json({ success: false, message: "Not found" });

@@ -1,5 +1,6 @@
 const { body, validationResult } = require("express-validator");
 const Structure = require("../model/Structure");
+const Substructure = require("../model/Substructure");
 
 exports.validate = [
   body("name")
@@ -81,6 +82,15 @@ exports.update = async (req, res) => {
 exports.deleteById = async (req, res) => {
   try {
     const { id } = req.params;
+    // Prevent deletion if referenced by any Substructure
+    const substructureUsing = await Substructure.findOne({ structure: id });
+    if (substructureUsing) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Cannot delete: Structure is in use by one or more substructures.",
+      });
+    }
     const deleted = await Structure.findByIdAndDelete(id);
     if (!deleted) {
       return res.status(404).json({ success: false, message: "Not found" });

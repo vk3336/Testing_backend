@@ -256,23 +256,27 @@ const updateSeo = async (req, res) => {
 const deleteSeo = async (req, res) => {
   try {
     const { id } = req.params;
-
+    // Prevent deletion if referenced by any Product
+    const productUsing = await Product.findOne({ seo: id });
+    if (productUsing) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot delete: SEO is in use by one or more products.",
+      });
+    }
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
         message: "Invalid SEO ID",
       });
     }
-
     const deletedSeo = await Seo.findByIdAndDelete(id);
-
     if (!deletedSeo) {
       return res.status(404).json({
         success: false,
         message: "SEO not found",
       });
     }
-
     res.status(200).json({
       success: true,
       message: "SEO deleted successfully",
@@ -361,12 +365,10 @@ const getSeoByProductIdentifier = async (req, res, next) => {
       productIdentifier: req.params.identifier,
     }).populate("product");
     if (!seo)
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "No SEO found with this product identifier",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "No SEO found with this product identifier",
+      });
     res.status(200).json({ success: true, data: seo });
   } catch (error) {
     next(error);
@@ -412,12 +414,10 @@ const getSeoByPurchasePriceValue = async (req, res, next) => {
       purchasePrice: { $gte: min, $lte: max },
     }).populate("product");
     if (!matched.length)
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "No SEO found in purchase price range",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "No SEO found in purchase price range",
+      });
     res.status(200).json({ success: true, data: matched });
   } catch (error) {
     next(error);

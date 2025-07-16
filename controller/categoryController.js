@@ -3,6 +3,7 @@ const { body, validationResult } = require("express-validator");
 const { cloudinaryServices } = require("../services/cloudinary.service.js");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
+const Product = require("../model/Product");
 
 // Validation middleware
 const validate = [
@@ -111,6 +112,14 @@ const viewCategoryById = async (req, res) => {
 const deleteCategoryById = async (req, res) => {
   try {
     const { id } = req.params;
+    // Check if any product references this category
+    const productUsingCategory = await Product.findOne({ category: id });
+    if (productUsingCategory) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot delete: Category is in use by one or more products.",
+      });
+    }
     const category = await Category.findByIdAndDelete(id);
     if (!category) {
       return res

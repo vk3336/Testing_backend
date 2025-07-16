@@ -1,5 +1,6 @@
 const { body, validationResult } = require("express-validator");
 const Design = require("../model/Design");
+const Product = require("../model/Product");
 
 exports.validate = [
   body("name")
@@ -74,6 +75,14 @@ exports.update = async (req, res) => {
 exports.deleteById = async (req, res) => {
   try {
     const { id } = req.params;
+    // Prevent deletion if referenced by any product
+    const productUsing = await Product.findOne({ design: id });
+    if (productUsing) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot delete: Design is in use by one or more products.",
+      });
+    }
     const deleted = await Design.findByIdAndDelete(id);
     if (!deleted) {
       return res.status(404).json({ success: false, message: "Not found" });
