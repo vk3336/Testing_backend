@@ -117,24 +117,20 @@ const create = async (req, res) => {
       if (req.files && req.files[field] && req.files[field][0]) {
         const fileObj = req.files[field][0];
         if (fileObj.size > MAX_IMAGE_SIZE) {
-          return res
-            .status(400)
-            .json({
-              success: false,
-              message: `Image file size for ${field} exceeds limit (${
-                MAX_IMAGE_SIZE / (1024 * 1024)
-              }MB)`,
-            });
+          return res.status(400).json({
+            success: false,
+            message: `Image file size for ${field} exceeds limit (${
+              MAX_IMAGE_SIZE / (1024 * 1024)
+            }MB)`,
+          });
         }
         if (!isValidExtension(fileObj.originalname, ALLOWED_IMAGE_EXTENSIONS)) {
-          return res
-            .status(400)
-            .json({
-              success: false,
-              message: `Invalid image extension for ${field}. Allowed: ${ALLOWED_IMAGE_EXTENSIONS.join(
-                ", "
-              )}`,
-            });
+          return res.status(400).json({
+            success: false,
+            message: `Invalid image extension for ${field}. Allowed: ${ALLOWED_IMAGE_EXTENSIONS.join(
+              ", "
+            )}`,
+          });
         }
       }
     }
@@ -142,24 +138,20 @@ const create = async (req, res) => {
     if (req.files && req.files.video && req.files.video[0]) {
       const videoObj = req.files.video[0];
       if (videoObj.size > MAX_VIDEO_SIZE) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: `Video file size exceeds limit (${
-              MAX_VIDEO_SIZE / (1024 * 1024)
-            }MB)`,
-          });
+        return res.status(400).json({
+          success: false,
+          message: `Video file size exceeds limit (${
+            MAX_VIDEO_SIZE / (1024 * 1024)
+          }MB)`,
+        });
       }
       if (!isValidExtension(videoObj.originalname, ALLOWED_VIDEO_EXTENSIONS)) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: `Invalid video extension. Allowed: ${ALLOWED_VIDEO_EXTENSIONS.join(
-              ", "
-            )}`,
-          });
+        return res.status(400).json({
+          success: false,
+          message: `Invalid video extension. Allowed: ${ALLOWED_VIDEO_EXTENSIONS.join(
+            ", "
+          )}`,
+        });
       }
     }
     const {
@@ -235,23 +227,27 @@ const create = async (req, res) => {
       strict: true,
     });
 
-    // Upload main image
-    const uploadResult = await cloudinaryServices.cloudinaryImageUpload(
-      req.files.file[0].buffer,
-      name,
-      categoryFolder
-    );
-    if (uploadResult.error) {
-      return res.status(500).json({
-        success: false,
-        message: "Image upload failed",
-      });
+    // Upload main image (optional)
+    let img = "";
+    if (req.files && req.files.file && req.files.file[0]) {
+      const uploadResult = await cloudinaryServices.cloudinaryImageUpload(
+        req.files.file[0].buffer,
+        name,
+        categoryFolder
+      );
+      if (uploadResult && uploadResult.secure_url) {
+        img = uploadResult.secure_url;
+      } else if (uploadResult && uploadResult.error) {
+        return res.status(500).json({
+          success: false,
+          message: "Image upload failed",
+        });
+      }
     }
-    const img = uploadResult.secure_url;
 
     // Upload image1 (if present)
     let image1Url = "";
-    if (req.files.image1 && req.files.image1[0]) {
+    if (req.files && req.files.image1 && req.files.image1[0]) {
       const upload1 = await cloudinaryServices.cloudinaryImageUpload(
         req.files.image1[0].buffer,
         name + "-image1",
@@ -261,7 +257,7 @@ const create = async (req, res) => {
     }
     // Upload image2 (if present)
     let image2Url = "";
-    if (req.files.image2 && req.files.image2[0]) {
+    if (req.files && req.files.image2 && req.files.image2[0]) {
       const upload2 = await cloudinaryServices.cloudinaryImageUpload(
         req.files.image2[0].buffer,
         name + "-image2",
@@ -273,7 +269,7 @@ const create = async (req, res) => {
     // Upload video (if present)
     let videoUrl = "";
     let videoThumbnailUrl = "";
-    if (req.files.video && req.files.video[0]) {
+    if (req.files && req.files.video && req.files.video[0]) {
       const videoResult = await cloudinaryServices.cloudinaryImageUpload(
         req.files.video[0].buffer,
         name + "-video",
