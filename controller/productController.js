@@ -14,13 +14,8 @@ const Seo = require("../model/Seo");
 const { cloudinaryServices } = require("../services/cloudinary.service.js");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
-// Update multer middleware to accept 'video' field
-const multiUpload = upload.fields([
-  { name: "file", maxCount: 1 },
-  { name: "image1", maxCount: 1 },
-  { name: "image2", maxCount: 1 },
-  { name: "video", maxCount: 1 },
-]);
+// Update multer middleware to accept any file field
+const multiUpload = upload.any();
 const slugify = require("slugify");
 const path = require("path");
 const ALLOWED_IMAGE_EXTENSIONS = (
