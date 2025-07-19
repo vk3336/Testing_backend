@@ -31,7 +31,7 @@ const host = "0.0.0.0";
 
 connectDB();
 
-const baseUrl = process.env.BASE_URL || `http://${host}:${port}`;
+// const baseUrl = process.env.BASE_URL || `http://${host}:${port}`;
 
 // Middleware
 app.use(compression());
@@ -142,7 +142,7 @@ app.use((req, res) => {
 if (require.main === module) {
   app.listen(port, host, () => {
     console.log(`Server is running on port ${port}`);
-    console.log(`Base URL: ${baseUrl}`);
+    // console.log(`Base URL: ${baseUrl}`);
     console.log(`MongoDB URI: ${process.env.MONGODB_URI_TEST}`);
   });
 }
