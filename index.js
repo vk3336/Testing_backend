@@ -24,6 +24,8 @@ const subsuitableRoutes = require("./routes/subsuitableRoutes");
 const productRoutes = require("./routes/productRoutes");
 const seoRoutes = require("./routes/seoRoutes");
 const motifRoutes = require("./routes/motifRoutes");
+const roleManagementRoutes = require("./routes/roleManagementRoutes");
+const apiKeyMiddleware = require("./middleware/apiKeyMiddleware"); // Import the new middleware
 
 const port = process.env.PORT || 7000;
 connectDB();
@@ -49,7 +51,12 @@ app.use(
     origin: [process.env.FRONTEND_URL || "http://localhost:3000"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "x-admin-email"], // <-- added x-admin-email
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      process.env.SUPER_ADMIN_HEADER_NAME || "x-admin-email",
+      process.env.API_KEY_NAME || "x-api-key",
+    ],
     maxAge: 86400, // 24 hours cache
   })
 );
@@ -76,6 +83,9 @@ app.use(
     crossOriginEmbedderPolicy: false,
   })
 );
+
+// Apply API Key Middleware
+app.use(apiKeyMiddleware);
 
 // 🚀 RESPONSE TIME MONITORING (silent)
 app.use((req, res, next) => {
@@ -135,6 +145,7 @@ app.use("/api/subsuitable", subsuitableRoutes);
 app.use("/api/product", productRoutes);
 app.use("/api/seo", seoRoutes);
 app.use("/api/motif", motifRoutes);
+app.use("/api/roles", roleManagementRoutes);
 
 app.get("/", (req, res) => {
   res.send("Welcome to the vivek API world");
