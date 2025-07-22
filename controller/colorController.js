@@ -22,6 +22,10 @@ exports.create = async (req, res) => {
     await item.save();
     res.status(201).json({ success: true, data: item });
   } catch (error) {
+    if (error.code === 11000) {
+      // Duplicate key error
+      return res.status(400).json({ success: false, message: "Color name must be unique." });
+    }
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -62,12 +66,16 @@ exports.update = async (req, res) => {
   try {
     const { id } = req.params;
     const { name } = req.body;
-    const updated = await Color.findByIdAndUpdate(id, { name }, { new: true });
+    const updated = await Color.findByIdAndUpdate(id, { name }, { new: true, runValidators: true });
     if (!updated) {
       return res.status(404).json({ success: false, message: "Not found" });
     }
     res.status(200).json({ success: true, data: updated });
   } catch (error) {
+    if (error.code === 11000) {
+      // Duplicate key error
+      return res.status(400).json({ success: false, message: "Color name must be unique." });
+    }
     res.status(500).json({ success: false, message: error.message });
   }
 };
