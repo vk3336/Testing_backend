@@ -14,6 +14,9 @@ exports.validate = [
 ];
 
 exports.create = async (req, res) => {
+  // Debug log incoming data
+  console.log('REQ.BODY:', req.body);
+  console.log('REQ.FILES:', req.files);
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ success: false, errors: errors.array() });

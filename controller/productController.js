@@ -107,6 +107,18 @@ const create = async (req, res) => {
     return res.status(400).json({ success: false, errors: errors.array() });
   }
   try {
+    // Convert req.files array to object with fieldname keys if needed
+    if (Array.isArray(req.files)) {
+      const filesObj = {};
+      for (const file of req.files) {
+        if (!filesObj[file.fieldname]) filesObj[file.fieldname] = [];
+        filesObj[file.fieldname].push(file);
+      }
+      req.files = filesObj;
+    }
+    // Debug: Log all request body and files for inspection
+    console.log("[DEBUG] Product create request body:", req.body);
+    console.log("[DEBUG] Product create request files:", req.files);
     // Validate image files
     const imageFields = ["file", "image1", "image2"];
     for (const field of imageFields) {
@@ -231,6 +243,7 @@ const create = async (req, res) => {
         name,
         categoryFolder
       );
+      console.log("[DEBUG] Cloudinary main image upload result:", uploadResult);
       if (uploadResult && uploadResult.secure_url) {
         img = uploadResult.secure_url;
       } else if (uploadResult && uploadResult.error) {
@@ -249,6 +262,7 @@ const create = async (req, res) => {
         name + "-image1",
         categoryFolder
       );
+      console.log("[DEBUG] Cloudinary image1 upload result:", upload1);
       if (upload1 && upload1.secure_url) image1Url = upload1.secure_url;
     }
     // Upload image2 (if present)
@@ -259,6 +273,7 @@ const create = async (req, res) => {
         name + "-image2",
         categoryFolder
       );
+      console.log("[DEBUG] Cloudinary image2 upload result:", upload2);
       if (upload2 && upload2.secure_url) image2Url = upload2.secure_url;
     }
 
@@ -273,6 +288,7 @@ const create = async (req, res) => {
         false,
         "video"
       );
+      console.log("[DEBUG] Cloudinary video upload result:", videoResult);
       // Extract AV1 video and thumbnail URLs
       if (videoResult && videoResult.eager && videoResult.eager.length > 0) {
         videoUrl = videoResult.eager[0].secure_url || videoResult.secure_url;
