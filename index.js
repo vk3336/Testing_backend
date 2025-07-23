@@ -54,7 +54,7 @@ app.use(
     allowedHeaders: [
       "Content-Type",
       "Authorization",
-      process.env.SUPER_ADMIN_HEADER_NAME || "x-admin-email",
+      process.env.Role_Management_Key || "x-admin-email",
       process.env.API_KEY_NAME || "x-api-key",
     ],
     maxAge: 86400, // 24 hours cache

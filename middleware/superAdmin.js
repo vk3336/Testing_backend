@@ -1,15 +1,15 @@
 const checkSuperAdmin = (req, res, next) => {
-  const superAdminEmail = process.env.SUPER_ADMIN_EMAIL;
+  const superAdminEmail = process.env.Role_Management_Key_Value;
   const superAdminHeaderName =
-    process.env.SUPER_ADMIN_HEADER_NAME || "x-admin-email"; // Default if not set
+    process.env.Role_Management_Key || "x-admin-email"; // Default if not set
   const requestEmail = req.headers[superAdminHeaderName.toLowerCase()];
 
   if (!superAdminEmail) {
-    console.error("SUPER_ADMIN_EMAIL not set in environment variables.");
+    console.error("Role_Management_Key_Value not set in environment variables.");
     return res
       .status(500)
       .json({
-        error: "Internal server error: SUPER_ADMIN_EMAIL not configured.",
+        error: "Internal server error: Role_Management_Key_Value not configured.",
       });
   }
 
