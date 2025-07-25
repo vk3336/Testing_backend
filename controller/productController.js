@@ -356,43 +356,30 @@ const create = async (req, res) => {
 
 const viewAll = async (req, res) => {
   try {
-    // 🚀 ULTRA-FAST PRODUCT QUERY OPTIMIZATIONS
-    const limit = parseInt(req.query.limit) || 50; // Increased default limit
-    const page = parseInt(req.query.page) || 1;
+    // 🚀 ULTRA-FAST PRODUCT QUERY OPTIMIZATIONS - NO LIMITS, ALL DATA
     const fields = req.query.fields
       ? req.query.fields.split(",").join(" ")
       : "";
-    const skip = (page - 1) * limit;
 
-    // 🚀 PARALLEL EXECUTION for faster queries
-    const [products, total] = await Promise.all([
-      Product.find({}, fields)
-        .skip(skip)
-        .limit(limit)
-        .lean() // Convert to plain objects for speed
-        .populate("category", "name")
-        .populate("substructure", "name")
-        .populate("content", "name")
-        .populate("design", "name")
-        .populate("subfinish", "name")
-        .populate("subsuitable", "name")
-        .populate("vendor", "name")
-        .populate("groupcode", "name")
-        .populate("color", "name")
-        .populate("motif", "name")
-        .exec(),
-      Product.countDocuments(),
-    ]);
+    // 🚀 GET ALL PRODUCTS - NO PAGINATION LIMITS
+    const products = await Product.find({}, fields)
+      .lean() // Convert to plain objects for speed
+      .populate("category", "name")
+      .populate("substructure", "name")
+      .populate("content", "name")
+      .populate("design", "name")
+      .populate("subfinish", "name")
+      .populate("subsuitable", "name")
+      .populate("vendor", "name")
+      .populate("groupcode", "name")
+      .populate("color", "name")
+      .populate("motif", "name")
+      .exec();
 
     res.status(200).json({
       success: true,
       data: products,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
+      total: products.length,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message, error });

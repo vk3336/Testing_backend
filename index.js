@@ -46,9 +46,18 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // 🚀 ULTRA-FAST MIDDLEWARE OPTIMIZATIONS
+// Support multiple frontend URLs
+const allowedOrigins = (process.env.FRONTEND_URLS || "http://localhost:3000").split(",");
+
 app.use(
   cors({
-    origin: [process.env.FRONTEND_URL || "http://localhost:3000"],
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: [

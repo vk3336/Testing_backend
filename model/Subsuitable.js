@@ -9,11 +9,11 @@ const subsuitableSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
-    suitablefor: {
+    suitablefor: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "Suitablefor",
       required: true,
-    },
+    }],
   },
   { timestamps: true }
 );

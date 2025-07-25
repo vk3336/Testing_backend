@@ -70,32 +70,19 @@ const createSeo = async (req, res) => {
 // Get all SEO - ULTRA FAST
 const getAllSeo = async (req, res) => {
   try {
-    // 🚀 PERFORMANCE OPTIMIZATIONS
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 50;
-    const skip = (page - 1) * limit;
-
-    // 🚀 PARALLEL EXECUTION for faster queries
-    const [seoList, total] = await Promise.all([
-      Seo.find()
-        .populate("product", "name img category") // Select only needed fields
-        .skip(skip)
-        .limit(limit)
-        .lean() // Convert to plain objects for speed
-        .exec(),
-      Seo.countDocuments(),
-    ]);
+    // 🚀 PERFORMANCE OPTIMIZATIONS - NO LIMITS, ALL DATA
+    
+    // 🚀 GET ALL SEO DATA - NO PAGINATION LIMITS
+    const seoList = await Seo.find()
+      .populate("product", "name img category") // Select only needed fields
+      .lean() // Convert to plain objects for speed
+      .exec();
 
     res.status(200).json({
       success: true,
       message: "SEO data retrieved successfully",
       data: seoList,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
+      total: seoList.length,
     });
   } catch (error) {
     res.status(500).json({

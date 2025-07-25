@@ -39,7 +39,7 @@ exports.create = async (req, res) => {
 
 exports.viewAll = async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 20;
+    const limit = parseInt(req.query.limit) || 1000;
     const page = parseInt(req.query.page) || 1;
     const fields = req.query.fields
       ? req.query.fields.split(",").join(" ")

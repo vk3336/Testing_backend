@@ -11,13 +11,20 @@ exports.validate = [
     .notEmpty()
     .withMessage("Name is required"),
   body("suitablefor")
-    .notEmpty()
-    .withMessage("Suitablefor reference is required")
-    .isMongoId()
-    .withMessage("Suitablefor must be a valid Mongo ID")
-    .custom(async (value) => {
-      const exists = await Suitablefor.exists({ _id: value });
-      if (!exists) throw new Error("Referenced suitablefor does not exist");
+    .isArray({ min: 1 })
+    .withMessage("Suitablefor must be an array with at least one item")
+    .custom(async (values) => {
+      // Check if all values are valid MongoDB ObjectIds
+      for (const value of values) {
+        if (!/^[0-9a-fA-F]{24}$/.test(value)) {
+          throw new Error(`Invalid MongoDB ObjectId: ${value}`);
+        }
+        // Check if each referenced suitablefor exists
+        const exists = await Suitablefor.exists({ _id: value });
+        if (!exists) {
+          throw new Error(`Referenced suitablefor does not exist: ${value}`);
+        }
+      }
       return true;
     }),
 ];
@@ -39,7 +46,7 @@ exports.create = async (req, res) => {
 
 exports.viewAll = async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 20;
+    const limit = parseInt(req.query.limit) || 1000;
     const page = parseInt(req.query.page) || 1;
     const fields = req.query.fields
       ? req.query.fields.split(",").join(" ")
