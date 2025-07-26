@@ -1,5 +1,10 @@
 const mongoose = require("mongoose");
 
+// Custom validator to ensure at least one color is selected
+function arrayLimit(val) {
+  return val && val.length > 0;
+}
+
 const productSchema = new mongoose.Schema(
   {
     name: {
@@ -69,9 +74,15 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
     color: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Color",
-      required: true,
+      type: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Color"
+      }],
+      required: [true, 'Product must have at least one color'],
+      validate: {
+        validator: arrayLimit,
+        message: 'Product must have at least one color'
+      }
     },
     motif: {
       type: mongoose.Schema.Types.ObjectId,

@@ -11,18 +11,23 @@ exports.validate = [
     .notEmpty()
     .withMessage("Name is required"),
   body("suitablefor")
-    .isArray({ min: 1 })
-    .withMessage("Suitablefor must be an array with at least one item")
-    .custom(async (values) => {
+    .custom(async (value) => {
+      // Convert single value to array if needed
+      const values = Array.isArray(value) ? value : [value];
+      
+      if (values.length === 0) {
+        throw new Error("Suitablefor must have at least one item");
+      }
+      
       // Check if all values are valid MongoDB ObjectIds
-      for (const value of values) {
-        if (!/^[0-9a-fA-F]{24}$/.test(value)) {
-          throw new Error(`Invalid MongoDB ObjectId: ${value}`);
+      for (const val of values) {
+        if (!/^[0-9a-fA-F]{24}$/.test(val)) {
+          throw new Error(`Invalid MongoDB ObjectId: ${val}`);
         }
         // Check if each referenced suitablefor exists
-        const exists = await Suitablefor.exists({ _id: value });
+        const exists = await Suitablefor.exists({ _id: val });
         if (!exists) {
-          throw new Error(`Referenced suitablefor does not exist: ${value}`);
+          throw new Error(`Referenced suitablefor does not exist: ${val}`);
         }
       }
       return true;
@@ -36,7 +41,9 @@ exports.create = async (req, res) => {
   }
   try {
     const { name, suitablefor } = req.body;
-    const item = new Subsuitable({ name, suitablefor });
+    // Convert single value to array if needed
+    const suitableforArray = Array.isArray(suitablefor) ? suitablefor : [suitablefor];
+    const item = new Subsuitable({ name, suitablefor: suitableforArray });
     await item.save();
     res.status(201).json({ success: true, data: item });
   } catch (error) {
@@ -84,7 +91,9 @@ exports.update = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, suitablefor } = req.body;
-    const updateData = { name, suitablefor };
+    // Convert single value to array if needed
+    const suitableforArray = Array.isArray(suitablefor) ? suitablefor : [suitablefor];
+    const updateData = { name, suitablefor: suitableforArray };
     const updated = await Subsuitable.findByIdAndUpdate(id, updateData, {
       new: true,
     });

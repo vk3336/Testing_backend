@@ -6,6 +6,7 @@ const productController = require("../controller/productController");
 router.post(
   "/",
   productController.multiUpload,
+  productController.handleColorArray,
   productController.validate,
   productController.create
 );
@@ -20,6 +21,7 @@ router.get("/:id", productController.viewById);
 router.put(
   "/:id",
   productController.multiUpload,
+  productController.handleColorArray,
   productController.validate,
   productController.update
 );

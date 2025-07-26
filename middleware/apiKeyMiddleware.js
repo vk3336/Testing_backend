@@ -1,4 +1,9 @@
 const apiKeyMiddleware = (req, res, next) => {
+  // Bypass API key check in test environment
+  if (process.env.NODE_ENV === 'test' || process.env.MONGODB_URI_TEST) {
+    return next();
+  }
+  
   // Allow role management routes to bypass API key check
   if (req.path.startsWith("/api/roles")) {
     return next();

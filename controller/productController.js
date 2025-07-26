@@ -1,5 +1,27 @@
 const { body, validationResult } = require("express-validator");
 const Product = require("../model/Product");
+
+// Middleware to handle color array from form data
+const handleColorArray = (req, res, next) => {
+  // Handle color[] field (from form data)
+  if (req.body['color[]']) {
+    // Convert to array if it's a single value
+    req.body.color = Array.isArray(req.body['color[]']) 
+      ? req.body['color[]'] 
+      : [req.body['color[]']];
+    delete req.body['color[]'];
+  }
+  // Ensure color is always an array
+  else if (req.body.color && !Array.isArray(req.body.color)) {
+    req.body.color = [req.body.color];
+  }
+  // Filter out any empty values
+  if (req.body.color) {
+    req.body.color = req.body.color.filter(Boolean);
+  }
+  next();
+};
+
 const Substructure = require("../model/Substructure");
 const Content = require("../model/Content");
 const Design = require("../model/Design");
@@ -85,10 +107,11 @@ const validate = [
     .isMongoId()
     .withMessage("Groupcode must be a valid Mongo ID"),
   body("color")
-    .notEmpty()
-    .withMessage("Color is required")
+    .isArray({ min: 1 })
+    .withMessage("At least one color is required"),
+  body('color.*')
     .isMongoId()
-    .withMessage("Color must be a valid Mongo ID"),
+    .withMessage('Each color must be a valid Mongo ID'),
   body("motif")
     .optional()
     .isMongoId()
@@ -104,7 +127,12 @@ const validate = [
 const create = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ success: false, errors: errors.array() });
+    console.error('Validation errors:', errors.array());
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Validation failed',
+      errors: errors.array() 
+    });
   }
   try {
     // Convert req.files array to object with fieldname keys if needed
@@ -198,18 +226,65 @@ const create = async (req, res) => {
       Design.exists({ _id: design }),
       Subfinish.exists({ _id: subfinish }),
       Subsuitable.exists({ _id: subsuitable }),
+      // Handle color validation
+      (async () => {
+        if (color && Array.isArray(color) && color.length > 0) {
+          try {
+            const count = await Color.countDocuments({ _id: { $in: color } });
+            console.log(`[DEBUG] Found ${count} valid colors out of ${color.length} requested`);
+            if (count !== color.length) {
+              const invalidColors = [];
+              // Find which colors are invalid
+              for (const colorId of color) {
+                const exists = await Color.exists({ _id: colorId });
+                if (!exists) {
+                  invalidColors.push(colorId);
+                }
+              }
+              console.error('Invalid color IDs:', invalidColors);
+              throw new Error(`The following color IDs are invalid: ${invalidColors.join(', ')}`);
+            }
+            return true; // All colors are valid
+          } catch (error) {
+            console.error('Error validating colors:', error);
+            throw error;
+          }
+        } else {
+          throw new Error('At least one color is required');
+        }
+      })(),
       Vendor.exists({ _id: vendor }),
-      Groupcode.exists({ _id: groupcode }),
-      Color.exists({ _id: color }),
+      Groupcode.exists({ _id: groupcode })
     ];
 
-    const validationResults = await Promise.all(validationPromises);
-    const invalidRefs = validationResults.filter((exists) => !exists);
+    try {
+      const validationResults = await Promise.all(validationPromises);
+      
+      // Map validation results to their corresponding field names for better error reporting
+      const fieldNames = [
+        'category', 'substructure', 'content', 'design', 'subfinish', 'subsuitable', 'color', 'vendor', 'groupcode'
+      ];
+      
+      const invalidRefs = validationResults.map((exists, index) => ({
+        field: fieldNames[index] || `unknown_${index}`,
+        exists: !!exists
+      })).filter(ref => !ref.exists);
 
-    if (invalidRefs.length > 0) {
+      if (invalidRefs.length > 0) {
+        console.error('Invalid references found:', invalidRefs);
+        const invalidFields = invalidRefs.map(ref => ref.field).join(', ');
+        return res.status(400).json({
+          success: false,
+          message: `The following referenced entities do not exist: ${invalidFields}`,
+          invalidReferences: invalidRefs
+        });
+      }
+    } catch (error) {
+      console.error('Error during reference validation:', error);
       return res.status(400).json({
         success: false,
-        message: "One or more referenced entities do not exist",
+        message: error.message || 'Error validating references',
+        error: error.toString()
       });
     }
 
@@ -568,8 +643,16 @@ const update = async (req, res) => {
         validationPromises.push(
           Groupcode.exists({ _id: updateData.groupcode })
         );
-      if (updateData.color)
-        validationPromises.push(Color.exists({ _id: updateData.color }));
+      if (updateData.color) {
+        // Handle both array and single color cases
+        const colors = Array.isArray(updateData.color) ? updateData.color : [updateData.color];
+        validationPromises.push(
+          (async () => {
+            const count = await Color.countDocuments({ _id: { $in: colors } });
+            return count === colors.length;
+          })()
+        );
+      }
       if (updateData.motif)
         validationPromises.push(Motif.exists({ _id: updateData.motif }));
 
@@ -867,6 +950,7 @@ const getProductsByQuantityValue = async (req, res, next) => {
 module.exports = {
   upload,
   multiUpload,
+  handleColorArray,
   create,
   viewAll,
   viewById,

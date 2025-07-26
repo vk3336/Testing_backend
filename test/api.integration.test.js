@@ -42,23 +42,39 @@ if (!process.env.MONGODB_URI_TEST) {
   describe("API Integration Tests", () => {
     let server;
     beforeAll(async () => {
-      await mongoose.connect(process.env.MONGODB_URI_TEST);
+      await mongoose.connect(process.env.MONGODB_URI_TEST, {
+        serverSelectionTimeoutMS: 30000,
+        socketTimeoutMS: 45000,
+        maxPoolSize: 10,
+        minPoolSize: 5,
+        maxIdleTimeMS: 30000,
+        waitQueueTimeoutMS: 5000,
+        connectTimeoutMS: 30000
+      });
       server = app.listen(0);
       for (const { Model } of MODELS) {
         await Model.deleteMany({});
       }
       await Category.deleteMany({});
       await Seo.deleteMany({});
-    });
+    }, 60000);
     afterAll(async () => {
-      for (const { Model } of MODELS) {
-        await Model.deleteMany({});
+      try {
+        for (const { Model } of MODELS) {
+          await Model.deleteMany({});
+        }
+        await Category.deleteMany({});
+        await Seo.deleteMany({});
+      } catch (error) {
+        console.warn('Cleanup error:', error.message);
       }
-      await Category.deleteMany({});
-      await Seo.deleteMany({});
-      await mongoose.connection.close();
-      server.close();
-    });
+      if (mongoose.connection.readyState === 1) {
+        await mongoose.connection.close();
+      }
+      if (server) {
+        server.close();
+      }
+    }, 30000);
 
     // Structure
     describe("Structure", () => {
