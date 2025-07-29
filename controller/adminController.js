@@ -1,6 +1,13 @@
 const Admin = require("../model/Admin");
+const RoleManagement = require("../model/RoleManagement");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
+
+// Debug: Log environment variables
+console.log('Environment Variables:');
+console.log('NEXT_PUBLIC_SUPER_ADMIN:', process.env.NEXT_PUBLIC_SUPER_ADMIN);
+console.log('EMAIL_USER:', process.env.EMAIL_USER ? 'Set' : 'Not Set');
+console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? 'Set' : 'Not Set');
 
 // Generate a 6-digit OTP
 const generateOTP = () => {
@@ -21,25 +28,43 @@ const createTransporter = () => {
 // Send OTP to admin email
 const sendOTP = async (req, res) => {
   try {
+    console.log('sendOTP called with:', req.body);
     const { email } = req.body;
-
-    // Check if the email matches the allowed emails from environment variable
-    const allowedEmails = process.env.ALLOW_EMAIL;
-    if (!allowedEmails) {
-      return res.status(500).json({
+    
+    if (!email) {
+      console.log('No email provided');
+      return res.status(400).json({
         success: false,
-        message: "Allowed emails not configured in environment variables",
+        message: "Email is required",
       });
     }
 
-    const allowedEmailList = allowedEmails
-      .split(",")
-      .map((e) => e.trim().toLowerCase());
-    if (!allowedEmailList.includes(email.toLowerCase())) {
-      return res.status(403).json({
-        success: false,
-        message: "Unauthorized email address",
-      });
+    const superAdminEmail = (process.env.NEXT_PUBLIC_SUPER_ADMIN || '').toLowerCase().trim();
+    const emailLower = email.toLowerCase().trim();
+    
+    console.log('Checking auth for:', { emailLower, superAdminEmail });
+
+    // Check if the email is the super admin or exists in RoleManagement
+    if (emailLower !== superAdminEmail) {
+      console.log('Not superadmin, checking RoleManagement...');
+      try {
+        const role = await RoleManagement.findOne({ email: emailLower });
+        console.log('Role found:', role);
+        if (!role) {
+          console.log(`Login attempt with unauthorized email: ${emailLower}`);
+          return res.status(403).json({
+            success: false,
+            message: "Unauthorized email address. Please contact the administrator.",
+          });
+        }
+      } catch (error) {
+        console.error('Error checking RoleManagement:', error);
+        return res.status(500).json({
+          success: false,
+          message: "Error checking permissions. Please try again.",
+          error: error.message
+        });
+      }
     }
 
     // Generate OTP
@@ -93,25 +118,55 @@ const sendOTP = async (req, res) => {
 // Verify OTP and login admin
 const verifyOTP = async (req, res) => {
   try {
+    console.log('verifyOTP called with:', { email: req.body.email, otp: req.body.otp ? '***' : 'missing' });
     const { email, otp } = req.body;
-
-    // Check if the email matches the allowed emails from environment variable
-    const allowedEmails = process.env.ALLOW_EMAIL;
-    if (!allowedEmails) {
-      return res.status(500).json({
+    
+    if (!email || !otp) {
+      console.log('Missing email or OTP');
+      return res.status(400).json({
         success: false,
-        message: "Allowed emails not configured in environment variables",
+        message: "Email and OTP are required",
       });
     }
+    
+    const superAdminEmail = (process.env.NEXT_PUBLIC_SUPER_ADMIN || '').toLowerCase().trim();
+    const emailLower = email.toLowerCase().trim();
+    let role = null;
+    
+    console.log('Verifying OTP for:', { emailLower, superAdminEmail });
+    
+    // Check if the email is the super admin or exists in RoleManagement
+    if (emailLower !== superAdminEmail) {
+      try {
+        console.log('Not superadmin, checking RoleManagement...');
+        role = await RoleManagement.findOne({ email: emailLower });
+        console.log('Role found:', role ? 'Yes' : 'No');
+        if (!role) {
+          console.log(`OTP verification attempt with unauthorized email: ${emailLower}`);
+          return res.status(403).json({
+            success: false,
+            message: "Unauthorized email address. Please contact the administrator.",
+          });
+        }
+      } catch (error) {
+        console.error('Error checking RoleManagement:', error);
+        return res.status(500).json({
+          success: false,
+          message: "Error checking permissions. Please try again.",
+          error: error.message
+        });
+      }
+    }
 
-    const allowedEmailList = allowedEmails
-      .split(",")
-      .map((e) => e.trim().toLowerCase());
-    if (!allowedEmailList.includes(email.toLowerCase())) {
-      return res.status(403).json({
-        success: false,
-        message: "Unauthorized email address",
-      });
+    // Check if the email is the super admin or exists in RoleManagement
+    if (emailLower !== superAdminEmail) {
+      role = await RoleManagement.findOne({ email: emailLower });
+      if (!role) {
+        return res.status(403).json({
+          success: false,
+          message: "Unauthorized email address",
+        });
+      }
     }
 
     // Find admin record
@@ -137,14 +192,35 @@ const verifyOTP = async (req, res) => {
     admin.lastLoginAt = new Date();
     await admin.save();
 
+    // Prepare response data
+    const responseData = {
+      email: admin.email,
+      isLoggedIn: admin.isLoggedIn,
+      lastLoginAt: admin.lastLoginAt,
+      isSuperAdmin: admin.email.toLowerCase() === process.env.NEXT_PUBLIC_SUPER_ADMIN?.toLowerCase(),
+      permissions: {}
+    };
+
+    // If not super admin, include role permissions
+    if (!responseData.isSuperAdmin && role) {
+      responseData.permissions = {
+        filter: role.filter,
+        product: role.product,
+        seo: role.seo
+      };
+    } else if (responseData.isSuperAdmin) {
+      // Super admin has all permissions
+      responseData.permissions = {
+        filter: "all access",
+        product: "all access",
+        seo: "all access"
+      };
+    }
+
     res.status(200).json({
       success: true,
       message: "Admin login successful",
-      data: {
-        email: admin.email,
-        isLoggedIn: admin.isLoggedIn,
-        lastLoginAt: admin.lastLoginAt,
-      },
+      data: responseData,
     });
   } catch (error) {
     res.status(500).json({

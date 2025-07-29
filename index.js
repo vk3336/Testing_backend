@@ -25,6 +25,7 @@ const productRoutes = require("./routes/productRoutes");
 const seoRoutes = require("./routes/seoRoutes");
 const motifRoutes = require("./routes/motifRoutes");
 const roleManagementRoutes = require("./routes/roleManagementRoutes");
+const staticSeoRoutes = require("./routes/staticSeoRoutes");
 const apiKeyMiddleware = require("./middleware/apiKeyMiddleware"); // Import the new middleware
 
 const port = process.env.PORT || 7000;
@@ -113,10 +114,10 @@ app.use((req, res, next) => {
 
 // Warn if required .env variables are missing
 const requiredEnv = [
-  "MONGODB_URI_TEST",
+  "MONGODB_URI",
   "EMAIL_USER",
   "EMAIL_PASS",
-  "ALLOW_EMAIL",
+  "API_SECRET_KEY"
 ];
 requiredEnv.forEach((key) => {
   if (!process.env[key]) {
@@ -155,6 +156,7 @@ app.use("/api/product", productRoutes);
 app.use("/api/seo", seoRoutes);
 app.use("/api/motif", motifRoutes);
 app.use("/api/roles", roleManagementRoutes);
+app.use("/api/static-seo", staticSeoRoutes);
 
 app.get("/", (req, res) => {
   res.send("Welcome to the vivek API world");
@@ -172,6 +174,6 @@ if (require.main === module) {
   app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
     console.log(`Base URL: ${baseUrl}`);
-    console.log(`MongoDB URI: ${process.env.MONGODB_URI_TEST}`);
+    console.log(`MongoDB URI: ${process.env.MONGODB_URI}`);
   });
 }

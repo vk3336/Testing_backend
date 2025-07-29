@@ -1,17 +1,17 @@
 const apiKeyMiddleware = (req, res, next) => {
   // Bypass API key check in test environment
-  if (process.env.NODE_ENV === 'test' || process.env.MONGODB_URI_TEST) {
-    return next();
-  }
+   if (process.env.NODE_ENV === 'test' || process.env.MONGODB_URI_TEST) {
+     return next();
+   }
   
-  // Allow role management routes to bypass API key check
+   // Allow role management routes to bypass API key check
   if (req.path.startsWith("/api/roles")) {
-    return next();
-  }
-  // Allow images to be served without API key
-  if (req.path.startsWith("/api/images")) {
-    return next();
-  }
+     return next();
+   }
+   // Allow images to be served without API key
+   if (req.path.startsWith("/api/images")) {
+     return next();
+   }
 
   const apiKeyName = process.env.API_KEY_NAME || "x-api-key"; // Default to 'x-api-key' if not set
   const apiKey = req.get(apiKeyName);
