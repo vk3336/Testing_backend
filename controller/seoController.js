@@ -411,6 +411,42 @@ const getSeoByPurchasePriceValue = async (req, res, next) => {
   }
 };
 
+// Get SEO by ID without populating product
+const getSeoByIdNoPopulate = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid SEO ID",
+      });
+    }
+
+    // Find the SEO document with the product field (as ID, not populated)
+    const seo = await Seo.findById(id);
+
+    if (!seo) {
+      return res.status(404).json({
+        success: false,
+        message: "SEO not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "SEO details retrieved successfully",
+      data: seo,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error getting SEO details",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createSeo,
   getAllSeo,
@@ -424,4 +460,5 @@ module.exports = {
   getSeoByProductIdentifier,
   getSeoBySalesPriceValue,
   getSeoByPurchasePriceValue,
+  getSeoByIdNoPopulate,
 };

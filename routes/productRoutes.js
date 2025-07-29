@@ -71,4 +71,7 @@ router.get(
   require("../controller/productController").getProductsByQuantityValue
 );
 
+// GET PRODUCT BY SLUG
+router.get("/slug/:slug", productController.getProductBySlug);
+
 module.exports = router;

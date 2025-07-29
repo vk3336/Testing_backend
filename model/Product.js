@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const slugify = require('slugify');
 
 // Custom validator to ensure at least one color is selected
 function arrayLimit(val) {
@@ -12,6 +13,12 @@ const productSchema = new mongoose.Schema(
       required: true,
       unique: true,
       trim: true,
+    },
+    slug: {
+      type: String,
+      unique: true,
+      trim: true,
+      lowercase: true,
     },
     img: {
       type: String,
@@ -135,5 +142,17 @@ productSchema.index({ color: 1 });
 productSchema.index({ createdAt: -1 });
 productSchema.index({ updatedAt: -1 });
 productSchema.index({ quantity: 1 });
+
+// Pre-save hook to generate slug from name
+productSchema.pre('save', function(next) {
+  if (this.isModified('name') || !this.slug) {
+    this.slug = slugify(this.name, {
+      lower: true,
+      strict: true,
+      remove: /[*+~.()'"!:@]/g
+    });
+  }
+  next();
+});
 
 module.exports = mongoose.model("Product", productSchema);

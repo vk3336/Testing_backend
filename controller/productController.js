@@ -947,6 +947,47 @@ const getProductsByQuantityValue = async (req, res, next) => {
   }
 };
 
+// GET PRODUCT BY SLUG
+const getProductBySlug = async (req, res, next) => {
+  try {
+    const { slug } = req.params;
+    
+    if (!slug) {
+      return res.status(400).json({ 
+        status: 0, 
+        message: "Product slug is required" 
+      });
+    }
+
+    const product = await Product.findOne({ slug })
+      .populate('category')
+      .populate('substructure')
+      .populate('content')
+      .populate('design')
+      .populate('subfinish')
+      .populate('subsuitable')
+      .populate('vendor')
+      .populate('groupcode')
+      .populate('color')
+      .populate('motif');
+
+    if (!product) {
+      return res.status(404).json({ 
+        status: 0, 
+        message: "Product not found" 
+      });
+    }
+
+    res.status(200).json({ 
+      status: 1, 
+      data: product 
+    });
+  } catch (error) {
+    console.error('Error getting product by slug:', error);
+    next(error);
+  }
+};
+
 module.exports = {
   upload,
   multiUpload,
@@ -970,4 +1011,5 @@ module.exports = {
   getProductsByInchValue,
   getProductsByCmValue,
   getProductsByQuantityValue,
+  getProductBySlug,
 };
