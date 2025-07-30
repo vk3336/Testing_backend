@@ -131,7 +131,7 @@ app.use((req, res, next) => {
   if (req.path.includes("/images/") || req.path.includes("/static/")) {
     res.setHeader("Cache-Control", "public, max-age=3600");
   }
-  // Cache API responses for 5 minute
+  // Cache API responses for 5 minutes
   else if (req.method === "GET") {
     res.setHeader("Cache-Control", "public, max-age=300");
   }
