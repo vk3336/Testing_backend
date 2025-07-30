@@ -209,6 +209,7 @@ const create = async (req, res) => {
       cm,
       inch,
       quantity: rawQuantity,
+      productdescription,
     } = req.body;
     let quantity = undefined;
     if (rawQuantity !== undefined && rawQuantity !== "") {
@@ -399,6 +400,7 @@ const create = async (req, res) => {
       cm,
       inch,
       quantity,
+      productdescription,
     });
 
     await product.save();

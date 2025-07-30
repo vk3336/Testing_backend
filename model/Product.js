@@ -124,6 +124,11 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: false,
     },
+    productdescription: {
+      type: String,
+      required: false,
+      trim: true,
+    },
   },
   { timestamps: true }
 );
