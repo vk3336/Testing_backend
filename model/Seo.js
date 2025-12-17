@@ -4,7 +4,7 @@ const seoSchema = new mongoose.Schema(
   {
     product: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Product",
+      ref: "Producttesting",
       required: false,
     },
     location: {
@@ -209,4 +209,4 @@ seoSchema.pre("save", async function (next) {
   }
 });
 
-module.exports = mongoose.model("productandlocation", seoSchema);
+module.exports = mongoose.model("productandlocationtesting", seoSchema);
