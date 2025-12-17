@@ -1,10 +1,4 @@
 const mongoose = require("mongoose");
-const slugify = require("slugify");
-
-// Custom validator to ensure at least one color is selected
-function arrayLimit(val) {
-  return val && val.length > 0;
-}
 
 const productSchema = new mongoose.Schema(
   {
@@ -71,29 +65,29 @@ const productSchema = new mongoose.Schema(
       trim: true,
     },
     category: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
+      type: String,
       required: false,
+      trim: true,
     },
     substructure: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Substructure",
+      type: String,
       required: false,
+      trim: true,
     },
     content: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Content",
+      type: String,
       required: false,
+      trim: true,
     },
     design: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Design",
+      type: String,
       required: false,
+      trim: true,
     },
     subfinish: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Subfinish",
+      type: String,
       required: false,
+      trim: true,
     },
     subsuitable: {
       type: [String],
@@ -101,9 +95,9 @@ const productSchema = new mongoose.Schema(
       default: [],
     },
     vendor: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Vendor",
+      type: String,
       required: false,
+      trim: true,
     },
     groupcode: {
       type: mongoose.Schema.Types.ObjectId,
@@ -111,19 +105,14 @@ const productSchema = new mongoose.Schema(
       required: false,
     },
     color: {
-      type: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Color",
-        },
-      ],
+      type: [String],
       required: false,
       default: [],
     },
     motif: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Motif",
+      type: String,
       required: false,
+      trim: true,
     },
     um: {
       type: String,
@@ -389,7 +378,7 @@ productSchema.pre("save", async function (next) {
     }
     // If no name or slug, generate a random slug
     else if (!this.slug) {
-      this.slug = "product-" + Math.random().toString(36).substr(2, 9);
+      this.slug = "product-" + Math.random().toString(36).substring(2, 11);
     }
 
     next();

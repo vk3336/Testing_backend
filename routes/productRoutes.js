@@ -9,6 +9,7 @@ router.post(
   productController.handleColorArray,
   productController.handleSubsuitableArray,
   productController.handleLeadtimeArray,
+  productController.handleProductTagArray,
   productController.validate,
   productController.create
 );
@@ -82,6 +83,7 @@ router.put(
   productController.handleColorArray,
   productController.handleSubsuitableArray,
   productController.handleLeadtimeArray,
+  productController.handleProductTagArray,
   productController.validate,
   productController.update
 );

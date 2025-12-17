@@ -152,24 +152,29 @@ const validate = [
     .withMessage("Name must be at least 2 characters"),
   body("category")
     .optional()
-    .isMongoId()
-    .withMessage("Category must be a valid Mongo ID"),
+    .isString()
+    .trim()
+    .withMessage("Category must be a string"),
   body("substructure")
     .optional()
-    .isMongoId()
-    .withMessage("Substructure must be a valid Mongo ID"),
+    .isString()
+    .trim()
+    .withMessage("Substructure must be a string"),
   body("content")
     .optional()
-    .isMongoId()
-    .withMessage("Content must be a valid Mongo ID"),
+    .isString()
+    .trim()
+    .withMessage("Content must be a string"),
   body("design")
     .optional()
-    .isMongoId()
-    .withMessage("Design must be a valid Mongo ID"),
+    .isString()
+    .trim()
+    .withMessage("Design must be a string"),
   body("subfinish")
     .optional()
-    .isMongoId()
-    .withMessage("Subfinish must be a valid Mongo ID"),
+    .isString()
+    .trim()
+    .withMessage("Subfinish must be a string"),
   body("subsuitable")
     .optional()
     .isArray()
@@ -180,8 +185,9 @@ const validate = [
     .withMessage("Each subsuitable item must be a string"),
   body("vendor")
     .optional()
-    .isMongoId()
-    .withMessage("Vendor must be a valid Mongo ID"),
+    .isString()
+    .trim()
+    .withMessage("Vendor must be a string"),
   body("groupcode")
     .optional()
     .isMongoId()
@@ -189,12 +195,13 @@ const validate = [
   body("color").optional().isArray().withMessage("Color must be an array"),
   body("color.*")
     .optional()
-    .isMongoId()
-    .withMessage("Each color must be a valid Mongo ID"),
+    .isString()
+    .withMessage("Each color must be a string"),
   body("motif")
     .optional()
-    .isMongoId()
-    .withMessage("Motif must be a valid Mongo ID"),
+    .isString()
+    .trim()
+    .withMessage("Motif must be a string"),
   body("um").optional().isString().withMessage("UM must be a string"),
   body("currency")
     .optional()
@@ -373,6 +380,7 @@ const create = async (req, res) => {
       productTagline,
       shortProductDescription,
       fullProductDescription,
+      productTag,
       altimg1,
       altimg2,
       altimg3,
@@ -394,175 +402,43 @@ const create = async (req, res) => {
     } = req.body;
     // quantity removed — no longer stored on Product
 
-    // 🚀 BATCH VALIDATION - Check all references in parallel if provided
-    const validationPromises = [
-      // Only validate category if provided
-      category
-        ? Category.exists({ _id: category }).then((exists) =>
-            exists
-              ? { field: "category", exists: true }
-              : { field: "category", exists: false }
-          )
-        : Promise.resolve({ field: "category", exists: true }),
-
-      // Only validate substructure if provided
-      substructure
-        ? Substructure.exists({ _id: substructure }).then((exists) =>
-            exists
-              ? { field: "substructure", exists: true }
-              : { field: "substructure", exists: false }
-          )
-        : Promise.resolve({ field: "substructure", exists: true }),
-
-      // Only validate content if provided
-      content
-        ? Content.exists({ _id: content }).then((exists) =>
-            exists
-              ? { field: "content", exists: true }
-              : { field: "content", exists: false }
-          )
-        : Promise.resolve({ field: "content", exists: true }),
-
-      // Only validate design if provided
-      design
-        ? Design.exists({ _id: design }).then((exists) =>
-            exists
-              ? { field: "design", exists: true }
-              : { field: "design", exists: false }
-          )
-        : Promise.resolve({ field: "design", exists: true }),
-
-      // Only validate subfinish if provided
-      subfinish
-        ? Subfinish.exists({ _id: subfinish }).then((exists) =>
-            exists
-              ? { field: "subfinish", exists: true }
-              : { field: "subfinish", exists: false }
-          )
-        : Promise.resolve({ field: "subfinish", exists: true }),
-
-      // Validate subsuitable as an array of non-empty strings (if provided)
-      (async () => {
-        if (!subsuitable) return { field: "subsuitable", exists: true };
-        // Accept both single string and array, but prefer array
-        const items = Array.isArray(subsuitable) ? subsuitable : [subsuitable];
-        const invalid = items.filter((s) => typeof s !== "string" || !s.trim());
-        if (invalid.length > 0) {
-          return {
-            field: "subsuitable",
-            exists: false,
-            message: `Invalid subsuitable values: ${invalid.join(", ")}`,
-          };
-        }
-        return { field: "subsuitable", exists: true };
-      })(),
-
-      // Handle color validation - colors are optional but if provided, must be valid
-      (async () => {
-        if (color && Array.isArray(color) && color.length > 0) {
-          try {
-            const count = await Color.countDocuments({ _id: { $in: color } });
-            console.log(
-              `[DEBUG] Found ${count} valid colors out of ${color.length} requested`
-            );
-            if (count !== color.length) {
-              const invalidColors = [];
-              // Find which colors are invalid
-              for (const colorId of color) {
-                const exists = await Color.exists({ _id: colorId });
-                if (!exists) {
-                  invalidColors.push(colorId);
-                }
-              }
-              console.error("Invalid color IDs:", invalidColors);
-              return {
-                field: "color",
-                exists: false,
-                message: `The following color IDs are invalid: ${invalidColors.join(
-                  ", "
-                )}`,
-              };
-            }
-            return { field: "color", exists: true }; // All colors are valid
-          } catch (error) {
-            console.error("Error validating colors:", error);
-            return {
-              field: "color",
-              exists: false,
-              message: "Error validating colors",
-            };
-          }
-        }
-        return { field: "color", exists: true }; // No colors provided is also valid
-      })(),
-
-      // Only validate vendor if provided
-      vendor
-        ? Vendor.exists({ _id: vendor }).then((exists) =>
-            exists
-              ? { field: "vendor", exists: true }
-              : { field: "vendor", exists: false }
-          )
-        : Promise.resolve({ field: "vendor", exists: true }),
-
-      // Only validate groupcode if provided
-      groupcode
-        ? Groupcode.exists({ _id: groupcode }).then((exists) =>
-            exists
-              ? { field: "groupcode", exists: true }
-              : { field: "groupcode", exists: false }
-          )
-        : Promise.resolve({ field: "groupcode", exists: true }),
-    ];
-
-    try {
-      const validationResults = await Promise.all(validationPromises);
-
-      // Filter out any invalid references
-      const invalidRefs = validationResults.filter((result) => !result.exists);
-
-      if (invalidRefs.length > 0) {
-        console.error("Invalid references found:", invalidRefs);
-        const errorMessages = invalidRefs
-          .map((ref) => ref.message || `${ref.field} not found`)
-          .join(". ");
-
-        return res.status(400).json({
-          success: false,
-          message: errorMessages || "Some references are invalid",
-          invalidReferences: invalidRefs,
-        });
-      }
-    } catch (error) {
-      console.error("Error during reference validation:", error);
-      return res.status(400).json({
-        success: false,
-        message: error.message || "Error validating references",
-        error: error.toString(),
-      });
-    }
-
-    // Validate motif if provided
-    if (motif) {
-      const motifExists = await Motif.exists({ _id: motif });
-      if (!motifExists) {
+    // 🚀 VALIDATION - Only validate groupcode since it's still a reference
+    if (groupcode) {
+      const groupcodeExists = await Groupcode.exists({ _id: groupcode });
+      if (!groupcodeExists) {
         return res
           .status(400)
-          .json({ success: false, message: "Motif not found" });
+          .json({ success: false, message: "Groupcode not found" });
+      }
+    }
+
+    // Validate subsuitable as an array of non-empty strings (if provided)
+    if (subsuitable) {
+      const items = Array.isArray(subsuitable) ? subsuitable : [subsuitable];
+      const invalid = items.filter((s) => typeof s !== "string" || !s.trim());
+      if (invalid.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid subsuitable values: ${invalid.join(", ")}`,
+        });
+      }
+    }
+
+    // Validate color array - now just strings
+    if (color && Array.isArray(color) && color.length > 0) {
+      const invalid = color.filter((c) => typeof c !== "string" || !c.trim());
+      if (invalid.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid color values: ${invalid.join(", ")}`,
+        });
       }
     }
 
     // Handle category folder naming (optional)
     let categoryFolder = "products"; // Default folder if no category
-    if (category) {
-      const categoryDoc = await Category.findById(category);
-      if (!categoryDoc) {
-        return res.status(400).json({
-          success: false,
-          message: "Category not found",
-        });
-      }
-      categoryFolder = slugify(categoryDoc.name, {
+    if (category && typeof category === "string" && category.trim()) {
+      categoryFolder = slugify(category, {
         lower: true,
         strict: true,
       });
@@ -697,6 +573,7 @@ const create = async (req, res) => {
       productTagline,
       shortProductDescription,
       fullProductDescription,
+      productTag,
       altimg1,
       altimg2,
       altimg3,
@@ -718,17 +595,9 @@ const create = async (req, res) => {
 
     await product.save();
 
-    // 🚀 OPTIMIZED POPULATION - Only populate essential fields
+    // 🚀 OPTIMIZED QUERY - Only populate groupcode since other fields are now strings
     const populated = await Product.findById(product._id)
-      .populate("category", "name")
-      .populate("substructure", "name")
-      .populate("content", "name")
-      .populate("design", "name")
-      .populate("subfinish", "name")
-      .populate("vendor", "name")
       .populate("groupcode", "name")
-      .populate("color", "name")
-      .populate("motif", "name")
       .lean();
 
     res.status(201).json({ success: true, data: populated });
@@ -753,15 +622,7 @@ const viewAll = async (req, res) => {
     // 🚀 GET ALL PRODUCTS - NO PAGINATION LIMITS
     let products = await Product.find({}, fields)
       .lean() // Convert to plain objects for speed
-      .populate("category", "name")
-      .populate("substructure", "name")
-      .populate("content", "name")
-      .populate("design", "name")
-      .populate("subfinish", "name")
-      .populate("vendor", "name")
       .populate("groupcode", "name")
-      .populate("color", "name")
-      .populate("motif", "name")
       .exec();
 
     res.status(200).json({
@@ -777,16 +638,7 @@ const viewAll = async (req, res) => {
 const viewById = async (req, res) => {
   try {
     const { id } = req.params;
-    const product = await Product.findById(id)
-      .populate("category", "name")
-      .populate("substructure", "name")
-      .populate("content", "name")
-      .populate("design", "name")
-      .populate("subfinish", "name")
-      .populate("vendor", "name")
-      .populate("groupcode", "name")
-      .populate("color", "name")
-      .populate("motif", "name");
+    const product = await Product.findById(id).populate("groupcode", "name");
     if (!product) {
       return res
         .status(404)
@@ -857,15 +709,16 @@ const update = async (req, res) => {
     }
     // Get category name for folder
     let categoryFolder = "products";
-    if (updateData.category || oldProduct.category) {
-      const categoryId = updateData.category || oldProduct.category;
-      const categoryDoc = await Category.findById(categoryId);
-      if (categoryDoc) {
-        categoryFolder = slugify(categoryDoc.name, {
-          lower: true,
-          strict: true,
-        });
-      }
+    const categoryName = updateData.category || oldProduct.category;
+    if (
+      categoryName &&
+      typeof categoryName === "string" &&
+      categoryName.trim()
+    ) {
+      categoryFolder = slugify(categoryName, {
+        lower: true,
+        strict: true,
+      });
     }
 
     // ---- MEDIA UPDATES ----
@@ -982,76 +835,42 @@ const update = async (req, res) => {
         .json({ success: false, message: mediaErr.message });
     }
 
-    // 🚀 BATCH VALIDATION if references are being updated
-    if (
-      updateData.category ||
-      updateData.substructure ||
-      updateData.content ||
-      updateData.design ||
-      updateData.subfinish ||
-      updateData.subsuitable ||
-      updateData.vendor ||
-      updateData.groupcode ||
-      updateData.color ||
-      updateData.motif
-    ) {
-      const validationPromises = [];
-      if (updateData.category)
-        validationPromises.push(Category.exists({ _id: updateData.category }));
-      if (updateData.substructure)
-        validationPromises.push(
-          Substructure.exists({ _id: updateData.substructure })
-        );
-      if (updateData.content)
-        validationPromises.push(Content.exists({ _id: updateData.content }));
-      if (updateData.design)
-        validationPromises.push(Design.exists({ _id: updateData.design }));
-      if (updateData.subfinish)
-        validationPromises.push(
-          Subfinish.exists({ _id: updateData.subfinish })
-        );
-      if (updateData.subsuitable)
-        validationPromises.push(
-          (async () => {
-            const items = Array.isArray(updateData.subsuitable)
-              ? updateData.subsuitable
-              : [updateData.subsuitable];
-            const invalid = items.filter(
-              (s) => typeof s !== "string" || !s.trim()
-            );
-            return invalid.length === 0;
-          })()
-        );
-      if (updateData.vendor)
-        validationPromises.push(Vendor.exists({ _id: updateData.vendor }));
-      if (updateData.groupcode)
-        validationPromises.push(
-          Groupcode.exists({ _id: updateData.groupcode })
-        );
-      if (updateData.color) {
-        // Handle both array and single color cases
-        const colors = Array.isArray(updateData.color)
-          ? updateData.color
-          : [updateData.color];
-        validationPromises.push(
-          (async () => {
-            const count = await Color.countDocuments({ _id: { $in: colors } });
-            return count === colors.length;
-          })()
-        );
+    // 🚀 VALIDATION - Only validate groupcode and array fields
+    if (updateData.groupcode) {
+      const groupcodeExists = await Groupcode.exists({
+        _id: updateData.groupcode,
+      });
+      if (!groupcodeExists) {
+        return res.status(400).json({
+          success: false,
+          message: "Groupcode not found",
+        });
       }
-      if (updateData.motif)
-        validationPromises.push(Motif.exists({ _id: updateData.motif }));
+    }
 
-      if (validationPromises.length > 0) {
-        const validationResults = await Promise.all(validationPromises);
-        const invalidRefs = validationResults.filter((exists) => !exists);
-        if (invalidRefs.length > 0) {
-          return res.status(400).json({
-            success: false,
-            message: "One or more referenced entities do not exist",
-          });
-        }
+    if (updateData.subsuitable) {
+      const items = Array.isArray(updateData.subsuitable)
+        ? updateData.subsuitable
+        : [updateData.subsuitable];
+      const invalid = items.filter((s) => typeof s !== "string" || !s.trim());
+      if (invalid.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid subsuitable values",
+        });
+      }
+    }
+
+    if (updateData.color) {
+      const colors = Array.isArray(updateData.color)
+        ? updateData.color
+        : [updateData.color];
+      const invalid = colors.filter((c) => typeof c !== "string" || !c.trim());
+      if (invalid.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid color values",
+        });
       }
     }
 
@@ -1071,17 +890,7 @@ const update = async (req, res) => {
     const updated = await Product.findByIdAndUpdate(id, updateData, {
       new: true,
     })
-      .populate([
-        { path: "category", select: "name" },
-        { path: "substructure", select: "name" },
-        { path: "content", select: "name" },
-        { path: "design", select: "name" },
-        { path: "subfinish", select: "name" },
-        { path: "vendor", select: "name" },
-        { path: "groupcode", select: "name" },
-        { path: "color", select: "name" },
-        { path: "motif", select: "name" },
-      ])
+      .populate("groupcode", "name")
       .lean();
 
     if (!updated) {
@@ -1154,7 +963,7 @@ const getProductsByGroupcode = async (req, res, next) => {
   }
 };
 
-// GET PRODUCTS BY CATEGORY ID
+// GET PRODUCTS BY CATEGORY NAME
 const getProductsByCategory = async (req, res, next) => {
   try {
     const products = await Product.find({ category: req.params.categoryId });
@@ -1168,7 +977,7 @@ const getProductsByCategory = async (req, res, next) => {
   }
 };
 
-// GET PRODUCTS BY CONTENT ID
+// GET PRODUCTS BY CONTENT NAME
 const getProductsByContent = async (req, res, next) => {
   try {
     const products = await Product.find({ content: req.params.contentId });
@@ -1182,7 +991,7 @@ const getProductsByContent = async (req, res, next) => {
   }
 };
 
-// GET PRODUCTS BY DESIGN ID
+// GET PRODUCTS BY DESIGN NAME
 const getProductsByDesign = async (req, res, next) => {
   try {
     const products = await Product.find({ design: req.params.designId });
@@ -1196,10 +1005,12 @@ const getProductsByDesign = async (req, res, next) => {
   }
 };
 
-// GET PRODUCTS BY COLOR ID
+// GET PRODUCTS BY COLOR NAME
 const getProductsByColor = async (req, res, next) => {
   try {
-    const products = await Product.find({ color: req.params.colorId });
+    const products = await Product.find({
+      color: { $in: [req.params.colorId] },
+    });
     if (!products.length)
       return res
         .status(404)
@@ -1210,7 +1021,7 @@ const getProductsByColor = async (req, res, next) => {
   }
 };
 
-// GET PRODUCTS BY MOTIF ID
+// GET PRODUCTS BY MOTIF NAME
 const getProductsByMotif = async (req, res, next) => {
   try {
     const products = await Product.find({ motif: req.params.motifId });
@@ -1224,7 +1035,7 @@ const getProductsByMotif = async (req, res, next) => {
   }
 };
 
-// GET PRODUCTS BY VENDOR ID
+// GET PRODUCTS BY VENDOR NAME
 const getProductsByVendor = async (req, res, next) => {
   try {
     const products = await Product.find({ vendor: req.params.vendorId });
@@ -1262,15 +1073,7 @@ const productByProductTag = async (req, res, next) => {
     // Match any array element equal to the tag (case-insensitive)
     const regex = new RegExp(`^${safeTag}$`, "i");
     const products = await Product.find({ productTag: { $in: [regex] } })
-      .populate("category", "name")
-      .populate("substructure", "name")
-      .populate("design", "name")
-      .populate("content", "name")
-      .populate("subfinish", "name")
-      .populate("vendor", "name")
       .populate("groupcode", "name")
-      .populate("color", "name")
-      .populate("motif", "name")
       .lean();
 
     if (!products || products.length === 0) {
@@ -1385,16 +1188,7 @@ const getProductBySlug = async (req, res, next) => {
       });
     }
 
-    const product = await Product.findOne({ slug })
-      .populate("category")
-      .populate("substructure")
-      .populate("content")
-      .populate("design")
-      .populate("subfinish")
-      .populate("vendor")
-      .populate("groupcode")
-      .populate("color")
-      .populate("motif");
+    const product = await Product.findOne({ slug }).populate("groupcode");
 
     if (!product) {
       return res.status(404).json({
@@ -1452,14 +1246,7 @@ const getPublicProductBySlug = async (req, res, next) => {
 
     const product = await Product.findOne({ slug })
       .select("-vendor") // Exclude vendor field
-      .populate("category")
-      .populate("substructure")
-      .populate("content")
-      .populate("design")
-      .populate("subfinish")
       .populate("groupcode")
-      .populate("color")
-      .populate("motif")
       .lean();
 
     if (!product) {
@@ -1520,6 +1307,7 @@ module.exports = {
   handleColorArray,
   handleSubsuitableArray,
   handleLeadtimeArray,
+  handleProductTagArray,
   create,
   viewAll,
   viewById,

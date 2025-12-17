@@ -382,18 +382,7 @@ const getAllSeoPublic = async (req, res) => {
       )
       .populate({
         path: "product",
-        populate: [
-          { path: "category", select: "name slug" },
-          { path: "substructure", select: "name slug" },
-          { path: "content", select: "name description" },
-          { path: "design", select: "name slug" },
-          { path: "subfinish", select: "name slug" },
-          { path: "subsuitable", select: "name slug" },
-          { path: "vendor", select: "name slug" },
-          { path: "groupcode", select: "name slug" },
-          { path: "color", select: "name slug" },
-          { path: "motif", select: "name slug" },
-        ],
+        populate: [{ path: "groupcode", select: "name slug" }],
       })
       .populate({
         path: "location",
@@ -439,18 +428,7 @@ const getSeoBySlugPublic = async (req, res) => {
       )
       .populate({
         path: "product",
-        populate: [
-          { path: "category", select: "name slug" },
-          { path: "substructure", select: "name slug" },
-          { path: "content", select: "name description" },
-          { path: "design", select: "name slug" },
-          { path: "subfinish", select: "name slug" },
-          { path: "subsuitable", select: "name slug" },
-          { path: "vendor", select: "name slug" },
-          { path: "groupcode", select: "name slug" },
-          { path: "color", select: "name slug" },
-          { path: "motif", select: "name slug" },
-        ],
+        populate: [{ path: "groupcode", select: "name slug" }],
       })
       .populate({
         path: "location",
@@ -513,18 +491,7 @@ const getSeoByCountry = async (req, res) => {
       })
         .populate({
           path: "product",
-          populate: [
-            { path: "category", select: "name slug" },
-            { path: "substructure", select: "name slug" },
-            { path: "content", select: "name slug" },
-            { path: "design", select: "name slug" },
-            { path: "subfinish", select: "name slug" },
-            { path: "subsuitable", select: "name slug" },
-            { path: "vendor", select: "name slug" },
-            { path: "groupcode", select: "name code" },
-            { path: "color", select: "name code" },
-            { path: "motif", select: "name slug" },
-          ],
+          populate: [{ path: "groupcode", select: "name code" }],
         })
         .populate({
           path: "location",
@@ -672,18 +639,7 @@ const getSeoByProductAndCountry = async (req, res) => {
       })
         .populate({
           path: "product",
-          populate: [
-            { path: "category", select: "name slug" },
-            { path: "substructure", select: "name slug" },
-            { path: "content", select: "name slug" },
-            { path: "design", select: "name slug" },
-            { path: "subfinish", select: "name slug" },
-            { path: "subsuitable", select: "name slug" },
-            { path: "vendor", select: "name slug" },
-            { path: "groupcode", select: "name code" },
-            { path: "color", select: "name code" },
-            { path: "motif", select: "name slug" },
-          ],
+          populate: [{ path: "groupcode", select: "name code" }],
         })
         .populate({
           path: "location",
@@ -804,15 +760,7 @@ const getSeoDetailsForAstroProducts = async (req, res) => {
         match: { productTag: "astro" }, // Only match products with "astro" tag
         select:
           "image1 image2 altimg1 altimg2 substructure content design subfinish subsuitable color motif gsm oz cm inch leadtime rating_count rating_value videourl videoalt ogType twitterCard productquestion1 productquestion2 productquestion3 productquestion4 productquestion5 productquestion6 productanswer1 productanswer2 productanswer3 productanswer4 productanswer5 productanswer6",
-        populate: [
-          { path: "substructure", select: "name slug" },
-          { path: "content", select: "name description" },
-          { path: "design", select: "name slug" },
-          { path: "subfinish", select: "name slug" },
-          { path: "subsuitable", select: "name slug" },
-          { path: "color", select: "name code" },
-          { path: "motif", select: "name slug" },
-        ],
+        populate: [{ path: "groupcode", select: "name code" }],
       })
       .populate({
         path: "location",
