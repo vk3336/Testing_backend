@@ -126,7 +126,7 @@ const officeInformationSchema = new mongoose.Schema(
         validator: function (v) {
           return v === "" || /^https?:\/\/.+/.test(v);
         },
-        message: "Twitter URL must start with http:// or https://",
+        message: "pinterest URL must start with http:// or https://",
       },
     },
   },
