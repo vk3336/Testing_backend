@@ -977,6 +977,565 @@ const getProductsByCategory = async (req, res, next) => {
   }
 };
 
+// GET PRODUCTS BY CATEGORY NAME (Simple method)
+const getProductsByCategoryName = async (req, res) => {
+  try {
+    let { categoryName } = req.params;
+
+    if (!categoryName) {
+      return res.status(400).json({
+        success: false,
+        message: "Category name is required",
+      });
+    }
+
+    // Handle URL decoding issues
+    try {
+      categoryName = decodeURIComponent(categoryName);
+    } catch (decodeError) {
+      // If decoding fails, use the original parameter
+      console.warn(
+        "URL decoding failed for category name:",
+        categoryName,
+        decodeError.message
+      );
+    }
+
+    // Escape special regex characters to prevent regex injection
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const safeCategoryName = escapeRegex(categoryName);
+
+    // Find products with matching category name (case-insensitive)
+    const products = await Product.find({
+      category: { $regex: new RegExp(`^${safeCategoryName}$`, "i") },
+    })
+      .populate("groupcode", "name")
+      .lean();
+
+    if (!products.length) {
+      return res.status(404).json({
+        success: false,
+        message: `No products found for category: ${categoryName}`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: products,
+      total: products.length,
+      category: categoryName,
+    });
+  } catch (error) {
+    console.error("Error fetching products by category name:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching products",
+      error: error.message,
+    });
+  }
+};
+
+// GET PRODUCTS BY SUBSTRUCTURE NAME
+const getProductsBySubstructureName = async (req, res) => {
+  try {
+    let { substructureName } = req.params;
+
+    if (!substructureName) {
+      return res.status(400).json({
+        success: false,
+        message: "Substructure name is required",
+      });
+    }
+
+    // Handle URL decoding issues
+    try {
+      substructureName = decodeURIComponent(substructureName);
+    } catch (decodeError) {
+      console.warn(
+        "URL decoding failed for substructure name:",
+        substructureName,
+        decodeError.message
+      );
+    }
+
+    // Escape special regex characters
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const safeSubstructureName = escapeRegex(substructureName);
+
+    const products = await Product.find({
+      substructure: { $regex: new RegExp(`^${safeSubstructureName}$`, "i") },
+    })
+      .populate("groupcode", "name")
+      .lean();
+
+    if (!products.length) {
+      return res.status(404).json({
+        success: false,
+        message: `No products found for substructure: ${substructureName}`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: products,
+      total: products.length,
+      substructure: substructureName,
+    });
+  } catch (error) {
+    console.error("Error fetching products by substructure name:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching products",
+      error: error.message,
+    });
+  }
+};
+
+// GET PRODUCTS BY CONTENT NAME
+const getProductsByContentName = async (req, res) => {
+  try {
+    let { contentName } = req.params;
+
+    if (!contentName) {
+      return res.status(400).json({
+        success: false,
+        message: "Content name is required",
+      });
+    }
+
+    // Handle URL decoding issues
+    try {
+      contentName = decodeURIComponent(contentName);
+    } catch (decodeError) {
+      console.warn(
+        "URL decoding failed for content name:",
+        contentName,
+        decodeError.message
+      );
+    }
+
+    // Escape special regex characters
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const safeContentName = escapeRegex(contentName);
+
+    const products = await Product.find({
+      content: { $regex: new RegExp(`^${safeContentName}$`, "i") },
+    })
+      .populate("groupcode", "name")
+      .lean();
+
+    if (!products.length) {
+      return res.status(404).json({
+        success: false,
+        message: `No products found for content: ${contentName}`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: products,
+      total: products.length,
+      content: contentName,
+    });
+  } catch (error) {
+    console.error("Error fetching products by content name:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching products",
+      error: error.message,
+    });
+  }
+};
+
+// GET PRODUCTS BY DESIGN NAME
+const getProductsByDesignName = async (req, res) => {
+  try {
+    let { designName } = req.params;
+
+    if (!designName) {
+      return res.status(400).json({
+        success: false,
+        message: "Design name is required",
+      });
+    }
+
+    // Handle URL decoding issues
+    try {
+      designName = decodeURIComponent(designName);
+    } catch (decodeError) {
+      console.warn(
+        "URL decoding failed for design name:",
+        designName,
+        decodeError.message
+      );
+    }
+
+    // Escape special regex characters
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const safeDesignName = escapeRegex(designName);
+
+    const products = await Product.find({
+      design: { $regex: new RegExp(`^${safeDesignName}$`, "i") },
+    })
+      .populate("groupcode", "name")
+      .lean();
+
+    if (!products.length) {
+      return res.status(404).json({
+        success: false,
+        message: `No products found for design: ${designName}`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: products,
+      total: products.length,
+      design: designName,
+    });
+  } catch (error) {
+    console.error("Error fetching products by design name:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching products",
+      error: error.message,
+    });
+  }
+};
+
+// GET PRODUCTS BY SUBFINISH NAME
+const getProductsBySubfinishName = async (req, res) => {
+  try {
+    let { subfinishName } = req.params;
+
+    if (!subfinishName) {
+      return res.status(400).json({
+        success: false,
+        message: "Subfinish name is required",
+      });
+    }
+
+    // Handle URL decoding issues
+    try {
+      subfinishName = decodeURIComponent(subfinishName);
+    } catch (decodeError) {
+      console.warn(
+        "URL decoding failed for subfinish name:",
+        subfinishName,
+        decodeError.message
+      );
+    }
+
+    // Escape special regex characters
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const safeSubfinishName = escapeRegex(subfinishName);
+
+    const products = await Product.find({
+      subfinish: { $regex: new RegExp(`^${safeSubfinishName}$`, "i") },
+    })
+      .populate("groupcode", "name")
+      .lean();
+
+    if (!products.length) {
+      return res.status(404).json({
+        success: false,
+        message: `No products found for subfinish: ${subfinishName}`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: products,
+      total: products.length,
+      subfinish: subfinishName,
+    });
+  } catch (error) {
+    console.error("Error fetching products by subfinish name:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching products",
+      error: error.message,
+    });
+  }
+};
+
+// GET PRODUCTS BY VENDOR NAME
+const getProductsByVendorName = async (req, res) => {
+  try {
+    let { vendorName } = req.params;
+
+    if (!vendorName) {
+      return res.status(400).json({
+        success: false,
+        message: "Vendor name is required",
+      });
+    }
+
+    // Handle URL decoding issues
+    try {
+      vendorName = decodeURIComponent(vendorName);
+    } catch (decodeError) {
+      console.warn(
+        "URL decoding failed for vendor name:",
+        vendorName,
+        decodeError.message
+      );
+    }
+
+    // Escape special regex characters
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const safeVendorName = escapeRegex(vendorName);
+
+    const products = await Product.find({
+      vendor: { $regex: new RegExp(`^${safeVendorName}$`, "i") },
+    })
+      .populate("groupcode", "name")
+      .lean();
+
+    if (!products.length) {
+      return res.status(404).json({
+        success: false,
+        message: `No products found for vendor: ${vendorName}`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: products,
+      total: products.length,
+      vendor: vendorName,
+    });
+  } catch (error) {
+    console.error("Error fetching products by vendor name:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching products",
+      error: error.message,
+    });
+  }
+};
+
+// GET PRODUCTS BY MOTIF NAME
+const getProductsByMotifName = async (req, res) => {
+  try {
+    let { motifName } = req.params;
+
+    if (!motifName) {
+      return res.status(400).json({
+        success: false,
+        message: "Motif name is required",
+      });
+    }
+
+    // Handle URL decoding issues
+    try {
+      motifName = decodeURIComponent(motifName);
+    } catch (decodeError) {
+      console.warn(
+        "URL decoding failed for motif name:",
+        motifName,
+        decodeError.message
+      );
+    }
+
+    // Escape special regex characters
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const safeMotifName = escapeRegex(motifName);
+
+    const products = await Product.find({
+      motif: { $regex: new RegExp(`^${safeMotifName}$`, "i") },
+    })
+      .populate("groupcode", "name")
+      .lean();
+
+    if (!products.length) {
+      return res.status(404).json({
+        success: false,
+        message: `No products found for motif: ${motifName}`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: products,
+      total: products.length,
+      motif: motifName,
+    });
+  } catch (error) {
+    console.error("Error fetching products by motif name:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching products",
+      error: error.message,
+    });
+  }
+};
+
+// GET PRODUCTS BY COLOR NAME (searches in color array, supports multiple colors)
+const getProductsByColorName = async (req, res) => {
+  try {
+    const { colors } = req.query;
+
+    if (!colors) {
+      return res.status(400).json({
+        success: false,
+        message: "Colors parameter is required. Use ?colors=red,yellow,blue",
+      });
+    }
+
+    // Split colors by comma and trim whitespace
+    const colorArray = colors
+      .split(",")
+      .map((color) => color.trim())
+      .filter(Boolean);
+
+    if (colorArray.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one color name is required",
+      });
+    }
+
+    // Handle URL decoding and escape regex characters for each color
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    const processedColors = colorArray.map((colorName) => {
+      try {
+        const decodedColor = decodeURIComponent(colorName);
+        return escapeRegex(decodedColor);
+      } catch (decodeError) {
+        console.warn(
+          "URL decoding failed for color name:",
+          colorName,
+          decodeError.message
+        );
+        return escapeRegex(colorName);
+      }
+    });
+
+    // Create regex patterns for each color (case-insensitive)
+    const colorRegexPatterns = processedColors.map(
+      (color) => new RegExp(`^${color}$`, "i")
+    );
+
+    // Search for products where the color array contains any of the specified colors
+    const products = await Product.find({
+      color: {
+        $elemMatch: {
+          $in: colorRegexPatterns,
+        },
+      },
+    })
+      .populate("groupcode", "name")
+      .lean();
+
+    if (!products.length) {
+      return res.status(404).json({
+        success: false,
+        message: `No products found for colors: ${colorArray.join(", ")}`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: products,
+      total: products.length,
+      colors: colorArray,
+    });
+  } catch (error) {
+    console.error("Error fetching products by color names:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching products",
+      error: error.message,
+    });
+  }
+};
+
+// GET PRODUCTS BY SUBSUITABLE NAME (searches in subsuitable array, supports multiple subsuitables)
+const getProductsBySubsuitableName = async (req, res) => {
+  try {
+    const { subsuitables } = req.query;
+
+    if (!subsuitables) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Subsuitables parameter is required. Use ?subsuitables=indoor,outdoor,commercial",
+      });
+    }
+
+    // Split subsuitables by comma and trim whitespace
+    const subsuitableArray = subsuitables
+      .split(",")
+      .map((subsuitable) => subsuitable.trim())
+      .filter(Boolean);
+
+    if (subsuitableArray.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one subsuitable name is required",
+      });
+    }
+
+    // Handle URL decoding and escape regex characters for each subsuitable
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    const processedSubsuitables = subsuitableArray.map((subsuitableName) => {
+      try {
+        const decodedSubsuitable = decodeURIComponent(subsuitableName);
+        return escapeRegex(decodedSubsuitable);
+      } catch (decodeError) {
+        console.warn(
+          "URL decoding failed for subsuitable name:",
+          subsuitableName,
+          decodeError.message
+        );
+        return escapeRegex(subsuitableName);
+      }
+    });
+
+    // Create regex patterns for each subsuitable (case-insensitive)
+    const subsuitableRegexPatterns = processedSubsuitables.map(
+      (subsuitable) => new RegExp(`^${subsuitable}$`, "i")
+    );
+
+    // Search for products where the subsuitable array contains any of the specified subsuitables
+    const products = await Product.find({
+      subsuitable: {
+        $elemMatch: {
+          $in: subsuitableRegexPatterns,
+        },
+      },
+    })
+      .populate("groupcode", "name")
+      .lean();
+
+    if (!products.length) {
+      return res.status(404).json({
+        success: false,
+        message: `No products found for subsuitables: ${subsuitableArray.join(
+          ", "
+        )}`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: products,
+      total: products.length,
+      subsuitables: subsuitableArray,
+    });
+  } catch (error) {
+    console.error("Error fetching products by subsuitable names:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching products",
+      error: error.message,
+    });
+  }
+};
+
 // GET PRODUCTS BY CONTENT NAME
 const getProductsByContent = async (req, res, next) => {
   try {
@@ -1318,11 +1877,20 @@ module.exports = {
   searchProducts,
   getProductsByGroupcode,
   getProductsByCategory,
+  getProductsByCategoryName,
+  getProductsBySubstructureName,
   getProductsByContent,
+  getProductsByContentName,
   getProductsByDesign,
+  getProductsByDesignName,
+  getProductsBySubfinishName,
   getProductsByColor,
+  getProductsByColorName,
+  getProductsBySubsuitableName,
   getProductsByMotif,
+  getProductsByMotifName,
   getProductsByVendor,
+  getProductsByVendorName,
   productByProductTag,
   getProductsByGsmValue,
   getProductsByOzValue,

@@ -26,7 +26,7 @@ router.get(
   productController.getproductByProductIdentifier
 );
 
- // View product by slug without vendor information
+// View product by slug without vendor information
 // router.get("/public/slug/:slug", productController.getPublicProductBySlug);
 
 // SEARCH PRODUCTS BY NAME
@@ -38,8 +38,53 @@ router.get("/producttag/:productTag", productController.productByProductTag);
 // GET ALL PRODUCTS BY GROUPCODE ID
 router.get("/groupcode/:groupcodeId", productController.getProductsByGroupcode);
 
+// GET PRODUCTS BY CATEGORY NAME
+router.get(
+  "/category/:categoryName",
+  productController.getProductsByCategoryName
+);
+
+// GET PRODUCTS BY SUBSTRUCTURE NAME
+router.get(
+  "/substructure/:substructureName",
+  productController.getProductsBySubstructureName
+);
+
+// GET PRODUCTS BY CONTENT NAME
+router.get(
+  "/content/:contentName",
+  productController.getProductsByContentName
+);
+
+// GET PRODUCTS BY DESIGN NAME
+router.get(
+  "/design/:designName",
+  productController.getProductsByDesignName
+);
+
+// GET PRODUCTS BY SUBFINISH NAME
+router.get(
+  "/subfinish/:subfinishName",
+  productController.getProductsBySubfinishName
+);
+
+// GET PRODUCTS BY VENDOR NAME
+router.get(
+  "/vendor/:vendorName",
+  productController.getProductsByVendorName
+);
+
+// GET PRODUCTS BY MOTIF NAME
+router.get("/motif/:motifName", productController.getProductsByMotifName);
+
+// GET PRODUCTS BY COLOR NAME (supports multiple colors as query params: ?colors=red,yellow,blue)
+router.get("/color/name", productController.getProductsByColorName);
+
+// GET PRODUCTS BY SUBSUITABLE NAME (supports multiple subsuitables as query params: ?subsuitables=indoor,outdoor,etc)
+router.get("/subsuitable/name", productController.getProductsBySubsuitableName);
+
 // // GET PRODUCTS BY CATEGORY ID
-// router.get("/category/:categoryId", productController.getProductsByCategory);
+//router.get("/category/:categoryId", productController.getProductsByCategory);
 
 // // GET PRODUCTS BY CONTENT ID
 // router.get("/content/:contentId", productController.getProductsByContent);
