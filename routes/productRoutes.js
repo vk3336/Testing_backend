@@ -18,7 +18,7 @@ router.post(
 router.get("/", productController.viewAll);
 
 // View all products except vendor information
-router.get("/public", productController.getAllProductsExceptVendor);
+// router.get("/public", productController.getAllProductsExceptVendor);
 
 // Get product by productIdentifier
 router.get(
@@ -26,8 +26,8 @@ router.get(
   productController.getproductByProductIdentifier
 );
 
-// View product by slug without vendor information
-router.get("/public/slug/:slug", productController.getPublicProductBySlug);
+ // View product by slug without vendor information
+// router.get("/public/slug/:slug", productController.getPublicProductBySlug);
 
 // SEARCH PRODUCTS BY NAME
 router.get("/search/:q", productController.searchProducts);
@@ -38,23 +38,23 @@ router.get("/producttag/:productTag", productController.productByProductTag);
 // GET ALL PRODUCTS BY GROUPCODE ID
 router.get("/groupcode/:groupcodeId", productController.getProductsByGroupcode);
 
-// GET PRODUCTS BY CATEGORY ID
-router.get("/category/:categoryId", productController.getProductsByCategory);
+// // GET PRODUCTS BY CATEGORY ID
+// router.get("/category/:categoryId", productController.getProductsByCategory);
 
-// GET PRODUCTS BY CONTENT ID
-router.get("/content/:contentId", productController.getProductsByContent);
+// // GET PRODUCTS BY CONTENT ID
+// router.get("/content/:contentId", productController.getProductsByContent);
 
-// GET PRODUCTS BY DESIGN ID
-router.get("/design/:designId", productController.getProductsByDesign);
+// // GET PRODUCTS BY DESIGN ID
+// router.get("/design/:designId", productController.getProductsByDesign);
 
-// GET PRODUCTS BY COLOR ID
-router.get("/color/:colorId", productController.getProductsByColor);
+// // GET PRODUCTS BY COLOR ID
+// router.get("/color/:colorId", productController.getProductsByColor);
 
-// GET PRODUCTS BY MOTIF ID
-router.get("/motif/:motifId", productController.getProductsByMotif);
+// // GET PRODUCTS BY MOTIF ID
+// router.get("/motif/:motifId", productController.getProductsByMotif);
 
-// GET PRODUCTS BY VENDOR ID
-router.get("/vendor/:vendorId", productController.getProductsByVendor);
+// // GET PRODUCTS BY VENDOR ID
+// router.get("/vendor/:vendorId", productController.getProductsByVendor);
 
 // GET PRODUCTS BY GSM RANGE
 router.get("/gsm/:value", productController.getProductsByGsmValue);
