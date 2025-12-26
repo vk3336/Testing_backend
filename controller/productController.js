@@ -909,6 +909,250 @@ const update = async (req, res) => {
   }
 };
 
+// UPDATE PRODUCT BY ESPOID
+const updateByEspoid = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
+  try {
+    const { espoid } = req.params;
+    const updateData = { ...req.body };
+
+    // Normalize leadtime in updateData: allow single string or array, store as array of trimmed strings
+    if (typeof updateData.leadtime !== "undefined") {
+      const lt = updateData.leadtime;
+      const arr = Array.isArray(lt) ? lt : [lt];
+      const normalized = arr
+        .map((v) => (v == null ? "" : String(v)))
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (normalized.length > 0) updateData.leadtime = normalized;
+      else delete updateData.leadtime;
+    }
+
+    // Normalize req.files (multer.any() => array) into { [fieldname]: File[] }
+    if (Array.isArray(req.files)) {
+      const filesObj = {};
+      for (const file of req.files) {
+        if (!filesObj[file.fieldname]) filesObj[file.fieldname] = [];
+        filesObj[file.fieldname].push(file);
+      }
+      req.files = filesObj;
+    }
+
+    // quantity removed — ignore quantity updates coming in request body
+
+    // Fetch the product to get old image URLs and category for folder
+    const oldProduct = await Product.findOne({ espoid }).lean();
+    if (!oldProduct) {
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: "Product not found with given espoid",
+        });
+    }
+    // Get category name for folder
+    let categoryFolder = "products";
+    const categoryName = updateData.category || oldProduct.category;
+    if (
+      categoryName &&
+      typeof categoryName === "string" &&
+      categoryName.trim()
+    ) {
+      categoryFolder = slugify(categoryName, {
+        lower: true,
+        strict: true,
+      });
+    }
+
+    // ---- MEDIA UPDATES ----
+    try {
+      // Main image: accept 'file' or 'image3'
+      const mainImageFile = req.files?.file?.[0] || req.files?.image3?.[0];
+
+      if (mainImageFile) {
+        validateFile(
+          mainImageFile,
+          ALLOWED_IMAGE_EXTENSIONS,
+          MAX_IMAGE_SIZE,
+          "image"
+        );
+        const uploaded = await cloudinaryServices.cloudinaryImageUpload(
+          mainImageFile.buffer,
+          req.body.name || oldProduct.name || "product",
+          categoryFolder
+        );
+        if (uploaded?.secure_url) {
+          if (oldProduct.image3) {
+            const publicId = oldProduct.image3
+              .split("/")
+              .slice(-1)[0]
+              .split(".")[0];
+            cloudinaryServices
+              .cloudinaryImageDelete(publicId)
+              .catch(console.error);
+          }
+          updateData.image3 = uploaded.secure_url;
+        }
+      }
+
+      // image1
+      if (req.files?.image1?.[0]) {
+        const f = req.files.image1[0];
+        validateFile(f, ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_SIZE, "image1");
+        const up = await cloudinaryServices.cloudinaryImageUpload(
+          f.buffer,
+          (req.body.name || oldProduct.name || "product") + "-image1",
+          categoryFolder
+        );
+        if (up?.secure_url) {
+          if (oldProduct.image1) {
+            const publicId = oldProduct.image1
+              .split("/")
+              .slice(-1)[0]
+              .split(".")[0];
+            cloudinaryServices
+              .cloudinaryImageDelete(publicId)
+              .catch(console.error);
+          }
+          updateData.image1 = up.secure_url;
+        }
+      }
+
+      // image2
+      if (req.files?.image2?.[0]) {
+        const f = req.files.image2[0];
+        validateFile(f, ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_SIZE, "image2");
+        const up = await cloudinaryServices.cloudinaryImageUpload(
+          f.buffer,
+          (req.body.name || oldProduct.name || "product") + "-image2",
+          categoryFolder
+        );
+        if (up?.secure_url) {
+          if (oldProduct.image2) {
+            const publicId = oldProduct.image2
+              .split("/")
+              .slice(-1)[0]
+              .split(".")[0];
+            cloudinaryServices
+              .cloudinaryImageDelete(publicId)
+              .catch(console.error);
+          }
+          updateData.image2 = up.secure_url;
+        }
+      }
+
+      // video
+      if (req.files?.video?.[0]) {
+        const vf = req.files.video[0];
+        validateFile(vf, ALLOWED_VIDEO_EXTENSIONS, MAX_VIDEO_SIZE, "video");
+        const vUp = await cloudinaryServices.cloudinaryImageUpload(
+          vf.buffer,
+          (req.body.name || oldProduct.name || "product") + "-video",
+          categoryFolder,
+          false,
+          "video" // ensure resource_type 'video'
+        );
+        if (vUp) {
+          // Use eager[0] as in create(), fallback to secure_url
+          updateData.video =
+            (vUp.eager && vUp.eager[0]?.secure_url) || vUp.secure_url || "";
+          updateData.videoThumbnail =
+            (vUp.eager && vUp.eager[1]?.secure_url) ||
+            updateData.videoThumbnail ||
+            "";
+          // Delete old video if exists
+          if (oldProduct.video) {
+            const publicId = oldProduct.video
+              .split("/")
+              .slice(-1)[0]
+              .split(".")[0];
+            cloudinaryServices
+              .cloudinaryImageDelete(publicId, "video")
+              .catch(console.error);
+          }
+        }
+      }
+    } catch (mediaErr) {
+      return res
+        .status(400)
+        .json({ success: false, message: mediaErr.message });
+    }
+
+    // 🚀 VALIDATION - Only validate groupcode and array fields
+    if (updateData.groupcode) {
+      const groupcodeExists = await Groupcode.exists({
+        _id: updateData.groupcode,
+      });
+      if (!groupcodeExists) {
+        return res.status(400).json({
+          success: false,
+          message: "Groupcode not found",
+        });
+      }
+    }
+
+    if (updateData.subsuitable) {
+      const items = Array.isArray(updateData.subsuitable)
+        ? updateData.subsuitable
+        : [updateData.subsuitable];
+      const invalid = items.filter((s) => typeof s !== "string" || !s.trim());
+      if (invalid.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid subsuitable values",
+        });
+      }
+    }
+
+    if (updateData.color) {
+      const colors = Array.isArray(updateData.color)
+        ? updateData.color
+        : [updateData.color];
+      const invalid = colors.filter((c) => typeof c !== "string" || !c.trim());
+      if (invalid.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid color values",
+        });
+      }
+    }
+
+    // Sanitize updateData - but allow empty strings for FAQ fields to clear them
+    Object.keys(updateData).forEach((key) => {
+      const isFAQField =
+        key.startsWith("productquestion") || key.startsWith("productanswer");
+
+      if (updateData[key] === undefined || updateData[key] === null) {
+        delete updateData[key];
+      } else if (updateData[key] === "" && !isFAQField) {
+        delete updateData[key];
+      }
+      // For FAQ fields, keep empty strings to allow clearing them
+    });
+
+    const updated = await Product.findOneAndUpdate({ espoid }, updateData, {
+      new: true,
+    })
+      .populate("groupcode", "name")
+      .lean();
+
+    if (!updated) {
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: "Product not found with given espoid",
+        });
+    }
+    res.status(200).json({ success: true, data: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const deleteById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -1919,6 +2163,7 @@ module.exports = {
   viewAll,
   viewById,
   update,
+  updateByEspoid,
   deleteById,
   validate,
   getproductByProductIdentifier,

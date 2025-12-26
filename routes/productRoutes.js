@@ -51,16 +51,10 @@ router.get(
 );
 
 // GET PRODUCTS BY CONTENT NAME
-router.get(
-  "/content/:contentName",
-  productController.getProductsByContentName
-);
+router.get("/content/:contentName", productController.getProductsByContentName);
 
 // GET PRODUCTS BY DESIGN NAME
-router.get(
-  "/design/:designName",
-  productController.getProductsByDesignName
-);
+router.get("/design/:designName", productController.getProductsByDesignName);
 
 // GET PRODUCTS BY SUBFINISH NAME
 router.get(
@@ -69,10 +63,7 @@ router.get(
 );
 
 // GET PRODUCTS BY VENDOR NAME
-router.get(
-  "/vendor/:vendorName",
-  productController.getProductsByVendorName
-);
+router.get("/vendor/:vendorName", productController.getProductsByVendorName);
 
 // GET PRODUCTS BY MOTIF NAME
 router.get("/motif/:motifName", productController.getProductsByMotifName);
@@ -131,6 +122,18 @@ router.put(
   productController.handleProductTagArray,
   productController.validate,
   productController.update
+);
+
+// Update product by espoid
+router.put(
+  "/espoid/:espoid",
+  productController.multiUpload,
+  productController.handleColorArray,
+  productController.handleSubsuitableArray,
+  productController.handleLeadtimeArray,
+  productController.handleProductTagArray,
+  productController.validate,
+  productController.updateByEspoid
 );
 
 // Delete product
