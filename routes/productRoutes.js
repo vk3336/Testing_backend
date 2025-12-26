@@ -138,5 +138,5 @@ router.delete("/:id", productController.deleteById);
 
 // View product by ID (this should be the last route as it's a catch-all for IDs)
 router.get("/:id", productController.viewById);
-
+router.get("/espoid/:espoid", productController.getProductsByEspoid);
 module.exports = router;

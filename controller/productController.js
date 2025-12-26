@@ -1867,6 +1867,47 @@ const getproductByProductIdentifier = async (req, res) => {
   }
 };
 
+// GET PRODUCTS BY ESPOID
+const getProductsByEspoid = async (req, res) => {
+  try {
+    const { espoid } = req.params;
+
+    if (!espoid) {
+      return res.status(400).json({
+        success: false,
+        message: "Espoid is required",
+      });
+    }
+
+    // Search for products with the given espoid
+    const products = await Product.find({ espoid: espoid }).populate(
+      "groupcode",
+      "name"
+    );
+
+    if (!products || products.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `No products found with espoid: ${espoid}`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Products retrieved successfully",
+      count: products.length,
+      data: products,
+    });
+  } catch (error) {
+    console.error("Error fetching products by espoid:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching products",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   upload,
   multiUpload,
@@ -1907,6 +1948,7 @@ module.exports = {
   getAllProductsExceptVendor,
   getPublicProductBySlug,
   deleteProductImage,
+  getProductsByEspoid,
 };
 
 // DELETE PRODUCT IMAGE
