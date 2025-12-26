@@ -288,6 +288,11 @@ const validate = [
     .optional()
     .isString()
     .withMessage("productanswer6 must be a string"),
+  body("espoid")
+    .optional()
+    .isString()
+    .trim()
+    .withMessage("espoid must be a string"),
 ];
 
 const create = async (req, res) => {
@@ -399,6 +404,7 @@ const create = async (req, res) => {
       productanswer4,
       productanswer5,
       productanswer6,
+      espoid,
     } = req.body;
     // quantity removed — no longer stored on Product
 
@@ -591,6 +597,7 @@ const create = async (req, res) => {
       productanswer4,
       productanswer5,
       productanswer6,
+      espoid,
     });
 
     await product.save();

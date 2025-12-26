@@ -276,6 +276,10 @@ const productSchema = new mongoose.Schema(
       required: false,
       trim: true,
     },
+    espoid: {
+      type: String,
+      required: false,
+    },
   },
   { timestamps: true }
 );
