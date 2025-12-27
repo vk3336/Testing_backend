@@ -946,12 +946,10 @@ const updateByEspoid = async (req, res) => {
     // Fetch the product to get old image URLs and category for folder
     const oldProduct = await Product.findOne({ espoid }).lean();
     if (!oldProduct) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Product not found with given espoid",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Product not found with given espoid",
+      });
     }
     // Get category name for folder
     let categoryFolder = "products";
@@ -1140,12 +1138,10 @@ const updateByEspoid = async (req, res) => {
       .lean();
 
     if (!updated) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Product not found with given espoid",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Product not found with given espoid",
+      });
     }
     res.status(200).json({ success: true, data: updated });
   } catch (error) {
@@ -1173,6 +1169,52 @@ const deleteById = async (req, res) => {
       const publicId = deleted.image3.split("/").pop().split(".")[0];
       await cloudinaryServices.cloudinaryImageDelete(publicId);
     }
+    res.status(200).json({ success: true, message: "Deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// DELETE PRODUCT BY ESPOID
+const deleteByEspoid = async (req, res) => {
+  try {
+    const { espoid } = req.params;
+
+    if (!espoid) {
+      return res.status(400).json({
+        success: false,
+        message: "Espoid is required",
+      });
+    }
+
+    // Prevent deletion if referenced by any SEO
+    const product = await Product.findOne({ espoid });
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found with given espoid",
+      });
+    }
+
+    const seoUsing = await Seo.findOne({ product: product._id });
+    if (seoUsing) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot delete: Product is in use by one or more SEO records.",
+      });
+    }
+
+    const deleted = await Product.findOneAndDelete({ espoid });
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: "Not found" });
+    }
+
+    // Remove image file
+    if (deleted.image3) {
+      const publicId = deleted.image3.split("/").pop().split(".")[0];
+      await cloudinaryServices.cloudinaryImageDelete(publicId);
+    }
+
     res.status(200).json({ success: true, message: "Deleted successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -2165,6 +2207,7 @@ module.exports = {
   update,
   updateByEspoid,
   deleteById,
+  deleteByEspoid,
   validate,
   getproductByProductIdentifier,
   searchProducts,
