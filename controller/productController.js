@@ -422,6 +422,28 @@ const create = async (req, res) => {
     } = req.body;
     // quantity removed — no longer stored on Product
 
+    // 🚀 VALIDATION - Check if product name already exists
+    if (name) {
+      const existingProduct = await Product.findOne({ name: name.trim() });
+      if (existingProduct) {
+        return res.status(400).json({
+          success: false,
+          message: "Product with this name already exists",
+        });
+      }
+    }
+
+    // 🚀 VALIDATION - Check if espoid already exists
+    if (espoid) {
+      const existingEspoid = await Product.findOne({ espoid: espoid.trim() });
+      if (existingEspoid) {
+        return res.status(400).json({
+          success: false,
+          message: "Product with this espoid already exists",
+        });
+      }
+    }
+
     // 🚀 VALIDATION - Only validate groupcode since it's still a reference
     if (groupcode) {
       const groupcodeExists = await Groupcode.exists({ _id: groupcode });
